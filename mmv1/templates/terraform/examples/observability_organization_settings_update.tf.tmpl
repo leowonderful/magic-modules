@@ -1,0 +1,17 @@
+resource "google_observability_organization_settings" "{{$.PrimaryResourceId}}" {
+  provider = google-private
+
+  organization = "{{index $.TestEnvVars "org_id"}}"
+  location     = "{{index $.Vars "location"}}"
+  default_storage_location = "{{index $.Vars "default_storage_location"}}"
+  kms_key_name             = var.kms_key_name
+}
+
+resource "google_observability_organization_settings" "{{$.PrimaryResourceId}}" {
+  provider = google-private
+
+  organization = "{{index $.TestEnvVars "org_id"}}"
+  location     = "{{index $.Vars "location"}}"
+  default_storage_location = "{{index $.Vars "updated_default_storage_location"}}"
+  kms_key_name             = var.kms_key_name
+}

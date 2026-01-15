@@ -1,0 +1,8 @@
+resource "google_observability_project_settings" "{{$.PrimaryResourceId}}" {
+  provider = google-private
+
+  project  = "{{index $.Vars "project_id"}}"
+  location = "{{index $.Vars "location"}}"
+  default_storage_location = "{{index $.Vars "default_storage_location"}}"
+  kms_key_name             = var.kms_key_name
+}

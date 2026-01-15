@@ -1,0 +1,25 @@
+resource "google_folder" "test_folder" {
+  provider     = google-private
+  display_name = "tf-test-obs-%{random_suffix}"
+  parent       = "organizations/{{index $.TestEnvVars "org_id"}}"
+}
+
+resource "google_observability_folder_settings" "{{$.PrimaryResourceId}}" {
+  provider = google-private
+
+  folder   = google_folder.test_folder.name
+  location = "{{index $.Vars "location"}}"
+  default_storage_location = "{{index $.Vars "default_storage_location"}}"
+  kms_key_name             = var.kms_key_name
+  depends_on = [google_folder.test_folder]
+}
+
+resource "google_observability_folder_settings" "{{$.PrimaryResourceId}}" {
+  provider = google-private
+
+  folder   = google_folder.test_folder.name
+  location = "{{index $.Vars "location"}}"
+  default_storage_location = "{{index $.Vars "updated_default_storage_location"}}"
+  kms_key_name             = var.updated_kms_key_name
+  depends_on = [google_folder.test_folder]
+}
