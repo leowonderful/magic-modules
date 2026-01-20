@@ -9,7 +9,7 @@ resource "google_observability_settings" "primary" {
   location = "us-central1"
 
   folder_settings {
-    folder   = google_folder.test_folder.name
+    folder   = google_folder.test_folder.folder_id
     kms_key_name             = "{{index $.Vars "kms_key_name"}}"
   }
   depends_on = [google_folder.test_folder]
