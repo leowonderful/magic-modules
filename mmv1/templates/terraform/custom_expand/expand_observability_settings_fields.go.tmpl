@@ -1,0 +1,52 @@
+package observability
+
+import (
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	transport_tpg "github.com/hashicorp/terraform-provider-google-beta/google-beta/transport"
+)
+
+func expandObservabilitySettingsFields(d *schema.ResourceData, config *transport_tpg.Config) (map[string]interface{}, error) {
+	obj := make(map[string]interface{})
+	location := d.Get("location").(string)
+
+	var settingsMap map[string]interface{}
+
+	if px, ok := d.GetOk("project_settings"); ok {
+		if len(px.([]interface{})) > 0 {
+			settingsMap = px.([]interface{})[0].(map[string]interface{})
+		}
+	} else if fx, ok := d.GetOk("folder_settings"); ok {
+		if len(fx.([]interface{})) > 0 {
+			settingsMap = fx.([]interface{})[0].(map[string]interface{})
+		}
+	} else if ox, ok := d.GetOk("organization_settings"); ok {
+		if len(ox.([]interface{})) > 0 {
+			settingsMap = ox.([]interface{})[0].(map[string]interface{})
+		}
+	} else {
+		return nil, fmt.Errorf("exactly one of project_settings, folder_settings, or organization_settings must be specified")
+	}
+
+	if settingsMap != nil {
+		if val, ok := settingsMap["default_storage_location"]; ok && val.(string) != "" {
+			if location == "global" {
+				obj["defaultStorageLocation"] = val.(string)
+			} else {
+				// This case should be caught by validation in observability_settings_url.go.tmpl, but double check
+				// return nil, fmt.Errorf("default_storage_location can only be set for the 'global' location")
+			}
+		}
+		if val, ok := settingsMap["kms_key_name"]; ok && val.(string) != "" {
+			if location != "global" {
+				obj["kmsKeyName"] = val.(string)
+			} else {
+				// This case should be caught by validation in observability_settings_url.go.tmpl, but double check
+				// return nil, fmt.Errorf("kms_key_name cannot be set for the 'global' location")
+			}
+		}
+	}
+
+	return obj, nil
+}
