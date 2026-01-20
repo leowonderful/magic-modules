@@ -1,0 +1,22 @@
+  settings := make(map[string]interface{})
+  var innerMap map[string]interface{}
+
+  if projectSettings, ok := obj["project_settings"].(map[string]interface{}); ok {
+    innerMap = projectSettings
+  } else if folderSettings, ok := obj["folder_settings"].(map[string]interface{}); ok {
+    innerMap = folderSettings
+  } else if organizationSettings, ok := obj["organization_settings"].(map[string]interface{}); ok {
+    innerMap = organizationSettings
+  } else {
+    return obj, nil // Should not happen
+  }
+
+  if val, ok := innerMap["default_storage_location"]; ok {
+    settings["defaultStorageLocation"] = val
+  }
+  if val, ok := innerMap["kms_key_name"]; ok {
+    settings["kmsKeyName"] = val
+  }
+
+  return settings, nil
+}

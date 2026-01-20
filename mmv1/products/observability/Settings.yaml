@@ -46,7 +46,7 @@ custom_code:
   pre_update: templates/terraform/custom_expand/observability_settings_url.go.tmpl
   pre_read: templates/terraform/custom_expand/observability_settings_url.go.tmpl
   custom_import: templates/terraform/custom_import/observability_settings_import.go.tmpl
-
+  encoder: templates/terraform/custom_encoder/observability_settings_encoder.go.tmpl
 
 parameters:
   - name: 'location'
