@@ -27,7 +27,7 @@
         return fmt.Errorf("missing scope ID within the settings block")
     }
 
-    url = fmt.Sprintf("%s/%s/%s/locations/%s/settings", config.ObservabilityBasePath, scopeType, scopeId, location)
+    url = fmt.Sprintf("%s%s/%s/locations/%s/settings", config.ObservabilityBasePath, scopeType, scopeId, location)
 
     // Field paths for change detection and mask
     defaultStorageLocationPath := ""
@@ -61,18 +61,7 @@
     var maskFields []string
     ApplyMask := false
 
-    if isCreate {
-        ApplyMask = true
-        if location == "global" {
-            if _, ok := d.GetOk(defaultStorageLocationPath); ok {
-                maskFields = append(maskFields, "defaultStorageLocation")
-            }
-        } else { // Regional
-            if _, ok := d.GetOk(kmsKeyNamePath); ok {
-                maskFields = append(maskFields, "kmsKeyName")
-            }
-        }
-    } else if hasDefaultStorageChange || hasKmsKeyChange { // pre_update with changes
+    if !isCreate && (hasDefaultStorageChange || hasKmsKeyChange) { // pre_update with changes
         ApplyMask = true
         if location == "global" {
             if hasDefaultStorageChange {
@@ -94,4 +83,4 @@
         url = newUrl // Update the URL in the outer scope
     }
 
-    return nil
+    
