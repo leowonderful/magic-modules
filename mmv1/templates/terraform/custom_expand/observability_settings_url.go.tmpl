@@ -27,8 +27,7 @@
         return fmt.Errorf("missing scope ID within the settings block")
     }
 
-    url = fmt.Sprintf("%s/%s/%s/locations/%s/settings", config.Version, scopeType, scopeId, location)
-    var err error
+    url = fmt.Sprintf("%s/%s/%s/locations/%s/settings", config.ObservabilityBasePath, scopeType, scopeId, location)
 
     // Field paths for change detection and mask
     defaultStorageLocationPath := ""
@@ -59,8 +58,11 @@
     hasDefaultStorageChange := d.HasChange(defaultStorageLocationPath)
     hasKmsKeyChange := d.HasChange(kmsKeyNamePath)
 
+    var maskFields []string
+    ApplyMask := false
+
     if isCreate {
-        var maskFields []string
+        ApplyMask = true
         if location == "global" {
             if _, ok := d.GetOk(defaultStorageLocationPath); ok {
                 maskFields = append(maskFields, "defaultStorageLocation")
@@ -70,15 +72,8 @@
                 maskFields = append(maskFields, "kmsKeyName")
             }
         }
-        if len(maskFields) > 0 {
-            updateMask := strings.Join(maskFields, ",")
-            url, err = transport_tpg.AddQueryParams(url, map[string]string{"updateMask": updateMask})
-            if err != nil {
-                return err
-            }
-        }
     } else if hasDefaultStorageChange || hasKmsKeyChange { // pre_update with changes
-        var maskFields []string
+        ApplyMask = true
         if location == "global" {
             if hasDefaultStorageChange {
                 maskFields = append(maskFields, "defaultStorageLocation")
@@ -88,15 +83,15 @@
                 maskFields = append(maskFields, "kmsKeyName")
             }
         }
-
-        if len(maskFields) > 0 {
-            updateMask := strings.Join(maskFields, ",")
-            url, err = transport_tpg.AddQueryParams(url, map[string]string{"updateMask": updateMask})
-            if err != nil {
-                return err
-            }
-        }
     }
-    // No updateMask needed for pre_read
+
+    if ApplyMask && len(maskFields) > 0 {
+        updateMask := strings.Join(maskFields, ",")
+        newUrl, qErr := transport_tpg.AddQueryParams(url, map[string]string{"updateMask": updateMask})
+        if qErr != nil {
+            return qErr
+        }
+        url = newUrl // Update the URL in the outer scope
+    }
 
     return nil
