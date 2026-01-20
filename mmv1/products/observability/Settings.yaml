@@ -42,9 +42,9 @@ async:
     resource_inside_response: true
 
 custom_code:
-  pre_create: templates/terraform/custom_actions/observability_settings_url.go.tmpl
-  pre_update: templates/terraform/custom_actions/observability_settings_url.go.tmpl
-  pre_read: templates/terraform/custom_actions/observability_settings_url.go.tmpl
+  pre_create: templates/terraform/custom_expand/observability_settings_url.go.tmpl
+  pre_update: templates/terraform/custom_expand/observability_settings_url.go.tmpl
+  pre_read: templates/terraform/custom_expand/observability_settings_url.go.tmpl
   custom_import: templates/terraform/custom_import/observability_settings_import.go.tmpl
 
 
@@ -60,7 +60,10 @@ properties:
   - name: 'project_settings'
     type: NestedObject
     description: 'Settings specific to a project. Exactly one of project_settings, folder_settings, or organization_settings must be set.'
-    conflicts_with: ['folder_settings', 'organization_settings']
+    exactly_one_of:
+      - 'project_settings'
+      - 'folder_settings'
+      - 'organization_settings'
     properties:
       - name: 'project'
         type: String
@@ -78,7 +81,10 @@ properties:
   - name: 'folder_settings'
     type: NestedObject
     description: 'Settings specific to a folder. Exactly one of project_settings, folder_settings, or organization_settings must be set.'
-    conflicts_with: ['project_settings', 'organization_settings']
+    exactly_one_of:
+      - 'project_settings'
+      - 'folder_settings'
+      - 'organization_settings'
     properties:
       - name: 'folder'
         type: String
@@ -96,7 +102,10 @@ properties:
   - name: 'organization_settings'
     type: NestedObject
     description: 'Settings specific to an organization. Exactly one of project_settings, folder_settings, or organization_settings must be set.'
-    conflicts_with: ['project_settings', 'folder_settings']
+    exactly_one_of:
+      - 'project_settings'
+      - 'folder_settings'
+      - 'organization_settings'
     properties:
       - name: 'organization'
         type: String
