@@ -1,0 +1,7 @@
+resource "google_observability_project_settings" "{{$.PrimaryResourceId}}" {
+  provider = google-beta
+
+  location = "us-central1"
+  default_storage_location = "{{index $.Vars "default_storage_location"}}"
+  kms_key_name             = "{{index $.Vars "kms_key_name"}}"
+}
