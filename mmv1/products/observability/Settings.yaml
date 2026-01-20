@@ -49,34 +49,68 @@ custom_code:
 
 
 parameters:
-  - name: 'project'
-    type: String
-    description: 'The ID of the project. Conflicts with folder and organization.'
-    url_param_only: true
-  - name: 'folder'
-    type: String
-    description: 'The ID of the folder. Conflicts with project and organization.'
-    url_param_only: true
-  - name: 'organization'
-    type: String
-    description: 'The ID of the organization. Conflicts with project and folder.'
-    url_param_only: true
   - name: 'location'
     type: String
     description: 'The location of the settings.'
     url_param_only: true
     required: true
     immutable: true
-  - name: 'defaultStorageLocation'
-    type: String
-    description: 'The default storage location for new resources, e.g. buckets.'
-    required: false
-  - name: 'kmsKeyName'
-    type: String
-    description: 'The default Cloud KMS key to use for new resources.'
-    required: false
 
 properties:
+  - name: 'project_settings'
+    type: NestedObject
+    description: 'Settings specific to a project. Exactly one of project_settings, folder_settings, or organization_settings must be set.'
+    conflicts_with: ['folder_settings', 'organization_settings']
+    properties:
+      - name: 'project'
+        type: String
+        description: 'The ID of the project.'
+        required: true
+      - name: 'defaultStorageLocation'
+        type: String
+        description: 'The default storage location for new resources, e.g. buckets. Only valid for global location.'
+        required: false
+      - name: 'kmsKeyName'
+        type: String
+        description: 'The default Cloud KMS key to use for new resources. Only valid for regional locations.'
+        required: false
+
+  - name: 'folder_settings'
+    type: NestedObject
+    description: 'Settings specific to a folder. Exactly one of project_settings, folder_settings, or organization_settings must be set.'
+    conflicts_with: ['project_settings', 'organization_settings']
+    properties:
+      - name: 'folder'
+        type: String
+        description: 'The ID of the folder.'
+        required: true
+      - name: 'defaultStorageLocation'
+        type: String
+        description: 'The default storage location for new resources, e.g. buckets. Only valid for global location.'
+        required: false
+      - name: 'kmsKeyName'
+        type: String
+        description: 'The default Cloud KMS key to use for new resources. Only valid for regional locations.'
+        required: false
+
+  - name: 'organization_settings'
+    type: NestedObject
+    description: 'Settings specific to an organization. Exactly one of project_settings, folder_settings, or organization_settings must be set.'
+    conflicts_with: ['project_settings', 'folder_settings']
+    properties:
+      - name: 'organization'
+        type: String
+        description: 'The ID of the organization.'
+        required: true
+      - name: 'defaultStorageLocation'
+        type: String
+        description: 'The default storage location for new resources, e.g. buckets. Only valid for global location.'
+        required: false
+      - name: 'kmsKeyName'
+        type: String
+        description: 'The default Cloud KMS key to use for new resources. Only valid for regional locations.'
+        required: false
+
   - name: 'name'
     type: String
     description: 'The resource name of the settings.'
@@ -88,10 +122,84 @@ properties:
 
 examples:
   - name: "observability_settings_project_basic"
-    config_path: "templates/terraform/examples/observability_settings_project_basic.tf.tmpl"
+    config_path: "templates/terraform/examples/observability_project_settings_basic.tf.tmpl"
     primary_resource_id: "settings"
     vars:
       location: "global"
       default_storage_location: "us-central1"
       project_id: ""
       kms_key_name: "example-key"
+    test_vars_overrides:
+      kms_key_name: 'acctest.BootstrapKMSKey(t).CryptoKey.Name'
+  - name: "observability_settings_project_update"
+    config_path: "templates/terraform/examples/observability_project_settings_update.tf.tmpl"
+    primary_resource_id: "settings"
+    vars:
+      location: "global"
+      default_storage_location: "us-central1"
+      updated_default_storage_location: "europe-west1"
+      project_id: ""
+      kms_key_name: "example-key"
+      updated_kms_key_name: "example-updated-key"
+    test_env_vars:
+      project_id: 'PROJECT_NUMBER'
+    test_vars_overrides:
+      kms_key_name: 'acctest.BootstrapKMSKey(t).CryptoKey.Name'
+      updated_kms_key_name: '""'
+  - name: "observability_settings_folder_basic"
+    config_path: "templates/terraform/examples/observability_folder_settings_basic.tf.tmpl"
+    primary_resource_id: "settings"
+    vars:
+      location: "global"
+      default_storage_location: "us-central1"
+      kms_key_name: "example-key"
+      folder_id: ""
+    test_vars_overrides:
+      kms_key_name: 'acctest.BootstrapKMSKey(t).CryptoKey.Name'
+    test_env_vars:
+      org_id: 'ORG_ID'
+      folder_id: 'FOLDER_ID'
+
+  - name: "observability_settings_folder_update"
+    config_path: "templates/terraform/examples/observability_folder_settings_update.tf.tmpl"
+    primary_resource_id: "settings"
+    vars:
+      location: "global"
+      default_storage_location: "us-central1"
+      updated_default_storage_location: "europe-west1"
+      kms_key_name: "example-key"
+      updated_kms_key_name: "example-updated-key"
+      folder_id: ""
+    test_vars_overrides:
+      kms_key_name: 'acctest.BootstrapKMSKey(t).CryptoKey.Name'
+      updated_kms_key_name: '""'
+    test_env_vars:
+      org_id: 'ORG_ID'
+      folder_id: 'FOLDER_ID'
+  - name: "observability_settings_organization_basic"
+    config_path: "templates/terraform/examples/observability_organization_settings_basic.tf.tmpl"
+    primary_resource_id: "settings"
+    vars:
+      location: "global"
+      default_storage_location: "us-central1"
+      kms_key_name: "example-key"
+      org_id: ""
+    test_vars_overrides:
+      kms_key_name: 'acctest.BootstrapKMSKey(t).CryptoKey.Name'
+    test_env_vars:
+      org_id: 'ORG_ID'
+  - name: "observability_settings_organization_update"
+    config_path: "templates/terraform/examples/observability_organization_settings_update.tf.tmpl"
+    primary_resource_id: "settings"
+    vars:
+      location: "global"
+      default_storage_location: "us-central1"
+      updated_default_storage_location: "europe-west1"
+      kms_key_name: "example-key"
+      updated_kms_key_name: "example-updated-key"
+      org_id: ""
+    test_vars_overrides:
+      kms_key_name: 'acctest.BootstrapKMSKey(t).CryptoKey.Name'
+      updated_kms_key_name: '""'
+    test_env_vars:
+      org_id: 'ORG_ID'

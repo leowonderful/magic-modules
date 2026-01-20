@@ -1,83 +1,90 @@
-var project, folder, organization string
-var pOk, fOk, oOk bool
+    var scopeType, scopeId string
+    location := d.Get("location").(string)
 
-if v, ok := d.GetOk("project"); ok {
-    project = v.(string)
-    pOk = true
-}
-if v, ok := d.GetOk("folder"); ok {
-    folder = v.(string)
-    fOk = true
-}
-if v, ok := d.GetOk("organization"); ok {
-    organization = v.(string)
-    oOk = true
-}
-
-location := d.Get("location").(string)
-
-setCount := 0
-if pOk { setCount++ }
-if fOk { setCount++ }
-if oOk { setCount++ }
-
-if setCount != 1 {
-    return fmt.Errorf("exactly one of project, folder, or organization must be specified in the resource block")
-}
-
-scopeType := ""
-scopeId := ""
-if pOk {
-    scopeType = "projects"
-    scopeId = project
-} else if fOk {
-    scopeType = "folders"
-    scopeId = folder
-} else { // oOk must be true
-    scopeType = "organizations"
-    scopeId = organization
-}
-
-url = fmt.Sprintf("{{.Version}}/%s/%s/locations/%s/settings", scopeType, scopeId, location)
-var err error
-
-// Validate location-specific fields early
-if location == "global" {
-    if _, ok := d.GetOk("kms_key_name"); ok {
-        return fmt.Errorf("kms_key_name cannot be set for the 'global' location")
+    if px, ok := d.GetOk("project_settings"); ok {
+        if len(px.([]interface{})) > 0 {
+            projMap := px.([]interface{})[0].(map[string]interface{})
+            scopeType = "projects"
+            scopeId = projMap["project"].(string)
+        }
+    } else if fx, ok := d.GetOk("folder_settings"); ok {
+        if len(fx.([]interface{})) > 0 {
+            folMap := fx.([]interface{})[0].(map[string]interface{})
+            scopeType = "folders"
+            scopeId = folMap["folder"].(string)
+        }
+    } else if ox, ok := d.GetOk("organization_settings"); ok {
+        if len(ox.([]interface{})) > 0 {
+            orgMap := ox.([]interface{})[0].(map[string]interface{})
+            scopeType = "organizations"
+            scopeId = orgMap["organization"].(string)
+        }
+    } else {
+        return fmt.Errorf("exactly one of project_settings, folder_settings, or organization_settings must be specified")
     }
-} else { // Regional
-    if _, ok := d.GetOk("default_storage_location"); ok {
-        return fmt.Errorf("default_storage_location can only be set for the 'global' location")
+
+    if scopeId == "" {
+        return fmt.Errorf("missing scope ID within the settings block")
     }
-}
 
-// Add updateMask only for pre_create and pre_update
-isCreate := d.Id() == ""
+    url = fmt.Sprintf("%s/%s/%s/locations/%s/settings", config.Version, scopeType, scopeId, location)
+    var err error
 
-if isCreate { // pre_create
-    var maskFields []string
+    // Field paths for change detection and mask
+    defaultStorageLocationPath := ""
+    kmsKeyNamePath := ""
+    if scopeType == "projects" {
+        defaultStorageLocationPath = "project_settings.0.default_storage_location"
+        kmsKeyNamePath = "project_settings.0.kms_key_name"
+    } else if scopeType == "folders" {
+        defaultStorageLocationPath = "folder_settings.0.default_storage_location"
+        kmsKeyNamePath = "folder_settings.0.kms_key_name"
+    } else { // organizations
+        defaultStorageLocationPath = "organization_settings.0.default_storage_location"
+        kmsKeyNamePath = "organization_settings.0.kms_key_name"
+    }
+
+    // Validate location-specific fields early
     if location == "global" {
-        // On create, always attempt to set fields defined in the schema for this location.
-        maskFields = append(maskFields, "defaultStorageLocation")
+        if _, ok := d.GetOk(kmsKeyNamePath); ok {
+            return fmt.Errorf("kms_key_name cannot be set for the 'global' location")
+        }
     } else { // Regional
-        maskFields = append(maskFields, "kmsKeyName")
+        if _, ok := d.GetOk(defaultStorageLocationPath); ok {
+            return fmt.Errorf("default_storage_location can only be set for the 'global' location")
+        }
     }
-    updateMask := strings.Join(maskFields, ",")
-    url, err = transport_tpg.AddQueryParams(url, map[string]string{"updateMask": updateMask})
-    if err != nil {
-        return err
-    }
-} else { // pre_update or pre_read
-    // Only add updateMask for pre_update
-    if d.HasChange("default_storage_location") || d.HasChange("kms_key_name") {
+
+    isCreate := d.Id() == ""
+    hasDefaultStorageChange := d.HasChange(defaultStorageLocationPath)
+    hasKmsKeyChange := d.HasChange(kmsKeyNamePath)
+
+    if isCreate {
         var maskFields []string
         if location == "global" {
-            if d.HasChange("default_storage_location") {
+            if _, ok := d.GetOk(defaultStorageLocationPath); ok {
                 maskFields = append(maskFields, "defaultStorageLocation")
             }
         } else { // Regional
-            if d.HasChange("kms_key_name") {
+            if _, ok := d.GetOk(kmsKeyNamePath); ok {
+                maskFields = append(maskFields, "kmsKeyName")
+            }
+        }
+        if len(maskFields) > 0 {
+            updateMask := strings.Join(maskFields, ",")
+            url, err = transport_tpg.AddQueryParams(url, map[string]string{"updateMask": updateMask})
+            if err != nil {
+                return err
+            }
+        }
+    } else if hasDefaultStorageChange || hasKmsKeyChange { // pre_update with changes
+        var maskFields []string
+        if location == "global" {
+            if hasDefaultStorageChange {
+                maskFields = append(maskFields, "defaultStorageLocation")
+            }
+        } else { // Regional
+            if hasKmsKeyChange {
                 maskFields = append(maskFields, "kmsKeyName")
             }
         }
@@ -90,6 +97,6 @@ if isCreate { // pre_create
             }
         }
     }
-}
+    // No updateMask needed for pre_read
 
-return nil
+    return nil

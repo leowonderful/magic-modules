@@ -1,8 +1,10 @@
 resource "google_observability_settings" "primary" {
   provider = google-beta
-
-  organization = "{{index $.Vars "org_id"}}"
   location     = "us-central1"
-  default_storage_location = "{{index $.Vars "default_storage_location"}}"
-  kms_key_name             = "{{index $.Vars "updated_kms_key_name"}}"
+
+  organization_settings {
+    organization = "{{index $.Vars "org_id"}}"
+    default_storage_location = "{{index $.Vars "default_storage_location"}}"
+    kms_key_name             = "{{index $.Vars "updated_kms_key_name"}}"
+  }
 }

@@ -6,10 +6,12 @@ resource "google_folder" "test_folder" {
 
 resource "google_observability_settings" "primary" {
   provider = google-beta
-
-  folder   = "{{index $.Vars "folder_id"}}"
   location = "us-central1"
-  default_storage_location = "{{index $.Vars "default_storage_location"}}"
-  kms_key_name             = "{{index $.Vars "updated_kms_key_name"}}"
+
+  folder_settings {
+    folder   = google_folder.test_folder.name
+    default_storage_location = "{{index $.Vars "default_storage_location"}}"
+    kms_key_name             = "{{index $.Vars "updated_kms_key_name"}}"
+  }
   depends_on = [google_folder.test_folder]
 }
