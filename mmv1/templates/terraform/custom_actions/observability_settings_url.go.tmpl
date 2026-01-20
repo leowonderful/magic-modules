@@ -1,0 +1,95 @@
+var project, folder, organization string
+var pOk, fOk, oOk bool
+
+if v, ok := d.GetOk("project"); ok {
+    project = v.(string)
+    pOk = true
+}
+if v, ok := d.GetOk("folder"); ok {
+    folder = v.(string)
+    fOk = true
+}
+if v, ok := d.GetOk("organization"); ok {
+    organization = v.(string)
+    oOk = true
+}
+
+location := d.Get("location").(string)
+
+setCount := 0
+if pOk { setCount++ }
+if fOk { setCount++ }
+if oOk { setCount++ }
+
+if setCount != 1 {
+    return fmt.Errorf("exactly one of project, folder, or organization must be specified in the resource block")
+}
+
+scopeType := ""
+scopeId := ""
+if pOk {
+    scopeType = "projects"
+    scopeId = project
+} else if fOk {
+    scopeType = "folders"
+    scopeId = folder
+} else { // oOk must be true
+    scopeType = "organizations"
+    scopeId = organization
+}
+
+url = fmt.Sprintf("{{.Version}}/%s/%s/locations/%s/settings", scopeType, scopeId, location)
+var err error
+
+// Validate location-specific fields early
+if location == "global" {
+    if _, ok := d.GetOk("kms_key_name"); ok {
+        return fmt.Errorf("kms_key_name cannot be set for the 'global' location")
+    }
+} else { // Regional
+    if _, ok := d.GetOk("default_storage_location"); ok {
+        return fmt.Errorf("default_storage_location can only be set for the 'global' location")
+    }
+}
+
+// Add updateMask only for pre_create and pre_update
+isCreate := d.Id() == ""
+
+if isCreate { // pre_create
+    var maskFields []string
+    if location == "global" {
+        // On create, always attempt to set fields defined in the schema for this location.
+        maskFields = append(maskFields, "defaultStorageLocation")
+    } else { // Regional
+        maskFields = append(maskFields, "kmsKeyName")
+    }
+    updateMask := strings.Join(maskFields, ",")
+    url, err = transport_tpg.AddQueryParams(url, map[string]string{"updateMask": updateMask})
+    if err != nil {
+        return err
+    }
+} else { // pre_update or pre_read
+    // Only add updateMask for pre_update
+    if d.HasChange("default_storage_location") || d.HasChange("kms_key_name") {
+        var maskFields []string
+        if location == "global" {
+            if d.HasChange("default_storage_location") {
+                maskFields = append(maskFields, "defaultStorageLocation")
+            }
+        } else { // Regional
+            if d.HasChange("kms_key_name") {
+                maskFields = append(maskFields, "kmsKeyName")
+            }
+        }
+
+        if len(maskFields) > 0 {
+            updateMask := strings.Join(maskFields, ",")
+            url, err = transport_tpg.AddQueryParams(url, map[string]string{"updateMask": updateMask})
+            if err != nil {
+                return err
+            }
+        }
+    }
+}
+
+return nil

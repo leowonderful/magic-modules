@@ -12,20 +12,26 @@
 # limitations under the License.
 
 ---
-name: 'OrganizationSettings'
-description: Resource manager for Organization-level Cloud Observability settings.
+name: 'Settings'
+description: Manages Cloud Observability settings for a project, folder, or organization.
 min_version: 'beta'
+
+# URLs are dynamic, so these are placeholders or less critical.
 base_url: 'organizations/{{organization}}/locations/{{location}}/settings'
 self_link: 'organizations/{{organization}}/locations/{{location}}/settings'
+
 create_url: 'organizations/{{organization}}/locations/{{location}}/settings'
 create_verb: 'PATCH'
 update_url: 'organizations/{{organization}}/locations/{{location}}/settings'
 update_verb: 'PATCH'
+
 update_mask: true
 exclude_delete: true
+autogen_async: true
+
 import_format:
   - 'organizations/{{organization}}/locations/{{location}}/settings'
-autogen_async: true
+
 async:
   operation:
     timeouts:
@@ -34,16 +40,27 @@ async:
     base_url: '{{op_id}}'
   result:
     resource_inside_response: true
-  include_project: true
+
 custom_code:
-  pre_create: templates/terraform/custom_actions/add_observability_settings_mask.go.tmpl
+  pre_create: templates/terraform/custom_actions/observability_settings_url.go.tmpl
+  pre_update: templates/terraform/custom_actions/observability_settings_url.go.tmpl
+  pre_read: templates/terraform/custom_actions/observability_settings_url.go.tmpl
+  custom_import: templates/terraform/custom_import/observability_settings_import.go.tmpl
+
+
 parameters:
+  - name: 'project'
+    type: String
+    description: 'The ID of the project. Conflicts with folder and organization.'
+    url_param_only: true
+  - name: 'folder'
+    type: String
+    description: 'The ID of the folder. Conflicts with project and organization.'
+    url_param_only: true
   - name: 'organization'
     type: String
-    description: 'The ID of the organization.'
+    description: 'The ID of the organization. Conflicts with project and folder.'
     url_param_only: true
-    required: true
-    immutable: true
   - name: 'location'
     type: String
     description: 'The location of the settings.'
@@ -58,38 +75,23 @@ parameters:
     type: String
     description: 'The default Cloud KMS key to use for new resources.'
     required: false
-  - name: 'serviceAccountId'
-    type: String
-    description: 'The service account used by Cloud Observability for this organization.'
-    output: true
+
 properties:
   - name: 'name'
     type: String
     description: 'The resource name of the settings.'
     output: true
+  - name: 'serviceAccountId'
+    type: String
+    description: 'The service account used by Cloud Observability for this project.'
+    output: true
+
 examples:
-  - name: "observability_organization_settings_basic"
-    config_path: "templates/terraform/examples/observability_organization_settings_basic.tf.tmpl"
+  - name: "observability_settings_project_basic"
+    config_path: "templates/terraform/examples/observability_settings_project_basic.tf.tmpl"
     primary_resource_id: "settings"
     vars:
       location: "global"
       default_storage_location: "us-central1"
-      kms_key_name: "example-key" 
-    test_env_vars:
-      org_id: 'ORG_ID'
-    test_vars_overrides:
-      kms_key_name: 'acctest.BootstrapKMSKey(t).CryptoKey.Name'
-  - name: "observability_organization_settings_update"
-    config_path: "templates/terraform/examples/observability_organization_settings_update.tf.tmpl"
-    primary_resource_id: "settings"
-    vars:
-      location: "global"
-      default_storage_location: "us-central1"
-      updated_default_storage_location: "europe-west1"
+      project_id: ""
       kms_key_name: "example-key"
-      updated_kms_key_name: "example-updated-key"
-    test_env_vars:
-      org_id: 'ORG_ID'
-    test_vars_overrides:
-      kms_key_name: 'acctest.BootstrapKMSKey(t).CryptoKey.Name'
-      updated_kms_key_name: '""'

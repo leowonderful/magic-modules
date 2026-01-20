@@ -1,0 +1,32 @@
+	ID := d.Id()
+	var project, folder, organization, location string
+
+	parts := strings.Split(ID, "/")
+	if len(parts) != 5 {
+		return nil, fmt.Errorf("invalid import ID format, expected <type>/<id>/locations/<location>/settings, got %s", ID)
+	}
+
+	scopeType := parts[0]
+	scopeId := parts[1]
+	if parts[2] != "locations" {
+		return nil, fmt.Errorf("invalid import ID format, missing 'locations'")
+	}
+	location = parts[3]
+	if parts[4] != "settings" {
+		return nil, fmt.Errorf("invalid import ID format, must end with 'settings'")
+	}
+
+	switch scopeType {
+	case "projects":
+		d.Set("project", scopeId)
+	case "folders":
+		d.Set("folder", scopeId)
+	case "organizations":
+		d.Set("organization", scopeId)
+	default:
+		return nil, fmt.Errorf("unrecognized scope type in ID: %s", scopeType)
+	}
+
+	d.Set("location", location)
+
+	// The ID is already in the correct format for SetId

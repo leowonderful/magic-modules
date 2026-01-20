@@ -4,10 +4,10 @@ resource "google_folder" "test_folder" {
   parent       = "organizations/{{index $.TestEnvVars "org_id"}}"
 }
 
-resource "google_observability_folder_settings" "{{$.PrimaryResourceId}}" {
+resource "google_observability_settings" "primary" {
   provider = google-beta
 
-  folder   = google_folder.test_folder.folder_id
+  folder   = "{{index $.Vars "folder_id"}}"
   location = "us-central1"
   default_storage_location = "{{index $.Vars "default_storage_location"}}"
   kms_key_name             = "{{index $.Vars "kms_key_name"}}"

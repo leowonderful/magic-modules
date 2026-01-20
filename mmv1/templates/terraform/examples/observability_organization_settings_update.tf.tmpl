@@ -1,7 +1,7 @@
-resource "google_observability_organization_settings" "{{$.PrimaryResourceId}}" {
+resource "google_observability_settings" "primary" {
   provider = google-beta
 
-  organization = "{{index $.TestEnvVars "org_id"}}"
+  organization = "{{index $.Vars "org_id"}}"
   location     = "us-central1"
   default_storage_location = "{{index $.Vars "default_storage_location"}}"
   kms_key_name             = "{{index $.Vars "updated_kms_key_name"}}"
