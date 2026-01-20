@@ -3,8 +3,7 @@ resource "google_observability_settings" "primary" {
   location = "us-central1"
 
   project_settings {
-    project = {{index $.Vars "project_id"}}
-    default_storage_location = "{{index $.Vars "default_storage_location"}}"
+    project = "{{index $.Vars "project_id"}}"
     kms_key_name             = "{{index $.Vars "updated_kms_key_name"}}"
   }
 }

@@ -4,7 +4,6 @@ resource "google_observability_settings" "primary" {
 
   organization_settings {
     organization = "{{index $.Vars "org_id"}}"
-    default_storage_location = "{{index $.Vars "default_storage_location"}}"
     kms_key_name             = "{{index $.Vars "updated_kms_key_name"}}"
   }
 }
