@@ -1,52 +1,54 @@
-package observability
-
-import (
-	"fmt"
-
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	transport_tpg "github.com/hashicorp/terraform-provider-google-beta/google-beta/transport"
-)
-
-func expandObservabilitySettingsFields(d *schema.ResourceData, config *transport_tpg.Config) (map[string]interface{}, error) {
-	obj := make(map[string]interface{})
+	log.Printf("[DEBUG] ENCODER CALLED\n")
 	location := d.Get("location").(string)
+  log.Printf("[DEBUG] Location: %s\n", location)
+
+	// Clear any default-expanded top-level settings blocks from the obj map
+	delete(obj, "project_settings")
+	delete(obj, "folder_settings")
+	delete(obj, "organization_settings")
 
 	var settingsMap map[string]interface{}
+	var defaultStoragePath, kmsKeyPath string
 
-	if px, ok := d.GetOk("project_settings"); ok {
-		if len(px.([]interface{})) > 0 {
-			settingsMap = px.([]interface{})[0].(map[string]interface{})
-		}
-	} else if fx, ok := d.GetOk("folder_settings"); ok {
-		if len(fx.([]interface{})) > 0 {
-			settingsMap = fx.([]interface{})[0].(map[string]interface{})
-		}
-	} else if ox, ok := d.GetOk("organization_settings"); ok {
-		if len(ox.([]interface{})) > 0 {
-			settingsMap = ox.([]interface{})[0].(map[string]interface{})
-		}
+	if px, ok := d.GetOk("project_settings"); ok && len(px.([]interface{})) > 0 {
+		settingsMap = px.([]interface{})[0].(map[string]interface{})
+		defaultStoragePath = "project_settings.0.default_storage_location"
+		kmsKeyPath = "project_settings.0.kms_key_name"
+	} else if fx, ok := d.GetOk("folder_settings"); ok && len(fx.([]interface{})) > 0 {
+		settingsMap = fx.([]interface{})[0].(map[string]interface{})
+		defaultStoragePath = "folder_settings.0.default_storage_location"
+		kmsKeyPath = "folder_settings.0.kms_key_name"
+	} else if ox, ok := d.GetOk("organization_settings"); ok && len(ox.([]interface{})) > 0 {
+		settingsMap = ox.([]interface{})[0].(map[string]interface{})
+		defaultStoragePath = "organization_settings.0.default_storage_location"
+		kmsKeyPath = "organization_settings.0.kms_key_name"
+    log.Printf("[DEBUG] org settingsMap: %+v\n", settingsMap)
 	} else {
 		return nil, fmt.Errorf("exactly one of project_settings, folder_settings, or organization_settings must be specified")
 	}
 
 	if settingsMap != nil {
-		if val, ok := settingsMap["default_storage_location"]; ok && val.(string) != "" {
-			if location == "global" {
+		if d.HasChange(defaultStoragePath) && location == "global" {
+			if val, vok := settingsMap["default_storage_location"]; vok {
 				obj["defaultStorageLocation"] = val.(string)
-			} else {
-				// This case should be caught by validation in observability_settings_url.go.tmpl, but double check
-				// return nil, fmt.Errorf("default_storage_location can only be set for the 'global' location")
 			}
 		}
-		if val, ok := settingsMap["kms_key_name"]; ok && val.(string) != "" {
-			if location != "global" {
+		if d.HasChange(kmsKeyPath) && location != "global" {
+      log.Printf("[DEBUG] HasChange true for %s\n", kmsKeyPath)
+			if val, vok := settingsMap["kms_key_name"]; vok {
+        log.Printf("[DEBUG] kms_key_name found in settingsMap: %v (type %T)\n", val, val)
 				obj["kmsKeyName"] = val.(string)
 			} else {
-				// This case should be caught by validation in observability_settings_url.go.tmpl, but double check
-				// return nil, fmt.Errorf("kms_key_name cannot be set for the 'global' location")
-			}
-		}
+        log.Printf("[DEBUG] kms_key_name NOT found in settingsMap\n")
+      }
+		} else {
+      if d.HasChange(kmsKeyPath) {
+          log.Printf("[DEBUG] HasChange true for %s but location is global\n", kmsKeyPath)
+      } else {
+          log.Printf("[DEBUG] HasChange false for %s\n", kmsKeyPath)
+      }
+    }
 	}
 
+  log.Printf("[DEBUG] ENCODER RETURNING: %+v\n", obj)
 	return obj, nil
-}
