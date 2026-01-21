@@ -4,6 +4,7 @@ resource "google_observability_settings" "primary" {
 
   organization_settings {
     organization = "{{index $.TestEnvVars "org_id"}}"
-    kms_key_name             = "{{index $.Vars "kms_key_name"}}"
+    # kms_key_name             = "{{index $.Vars "kms_key_name"}}"
+    kms_key_name = ""
   }
 }

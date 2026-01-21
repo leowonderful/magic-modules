@@ -25,7 +25,7 @@ create_verb: 'PATCH'
 update_url: 'organizations/{{organization}}/locations/{{location}}/settings'
 update_verb: 'PATCH'
 
-update_mask: true
+
 exclude_delete: true
 autogen_async: true
 
@@ -47,6 +47,7 @@ custom_code:
   pre_read: templates/terraform/custom_expand/observability_settings_url.go.tmpl
   custom_import: templates/terraform/custom_import/observability_settings_import.go.tmpl
   encoder: templates/terraform/custom_expand/expand_observability_settings_fields.go.tmpl
+  decoder: templates/terraform/custom_flatten/flatten_observability_settings.go.tmpl
 
 parameters:
   - name: 'location'
@@ -73,10 +74,12 @@ properties:
         type: String
         description: 'The default storage location for new resources, e.g. buckets. Only valid for global location.'
         required: false
+
       - name: 'kmsKeyName'
         type: String
         description: 'The default Cloud KMS key to use for new resources. Only valid for regional locations.'
         required: false
+
 
   - name: 'folder_settings'
     type: NestedObject
@@ -94,10 +97,12 @@ properties:
         type: String
         description: 'The default storage location for new resources, e.g. buckets. Only valid for global location.'
         required: false
+
       - name: 'kmsKeyName'
         type: String
         description: 'The default Cloud KMS key to use for new resources. Only valid for regional locations.'
         required: false
+
 
   - name: 'organization_settings'
     type: NestedObject
@@ -115,10 +120,12 @@ properties:
         type: String
         description: 'The default storage location for new resources, e.g. buckets. Only valid for global location.'
         required: false
+
       - name: 'kmsKeyName'
         type: String
         description: 'The default Cloud KMS key to use for new resources. Only valid for regional locations.'
         required: false
+
 
   - name: 'name'
     type: String

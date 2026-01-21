@@ -1,0 +1,69 @@
+package google
+
+import (
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func flattenObservabilitySettings(d *schema.ResourceData, meta interface{}, res map[string]interface{}) (map[string]interface{}, error) {
+	location := d.Get("location").(string)
+	out := make(map[string]interface{})
+
+	// Reconstruct the nested block
+	if px, ok := d.GetOk("project_settings"); ok && len(px.([]interface{})) > 0 {
+		settingsMap := px.([]interface{})[0].(map[string]interface{})
+		project := settingsMap["project"].(string)
+		newSettings := map[string]interface{}{"project": project}
+		if location == "global" {
+			if v, ok := res["defaultStorageLocation"]; ok {
+				newSettings["default_storage_location"] = v.(string)
+			}
+		} else {
+			if v, ok := res["kmsKeyName"]; ok {
+				newSettings["kms_key_name"] = v.(string)
+			}
+		}
+		out["project_settings"] = []interface{}{newSettings}
+	} else if fx, ok := d.GetOk("folder_settings"); ok && len(fx.([]interface{})) > 0 {
+		settingsMap := fx.([]interface{})[0].(map[string]interface{})
+		folder := settingsMap["folder"].(string)
+		newSettings := map[string]interface{}{"folder": folder}
+		if location == "global" {
+			if v, ok := res["defaultStorageLocation"]; ok {
+				newSettings["default_storage_location"] = v.(string)
+			}
+		} else {
+			if v, ok := res["kmsKeyName"]; ok {
+				newSettings["kms_key_name"] = v.(string)
+			}
+		}
+		out["folder_settings"] = []interface{}{newSettings}
+	} else if ox, ok := d.GetOk("organization_settings"); ok && len(ox.([]interface{})) > 0 {
+		settingsMap := ox.([]interface{})[0].(map[string]interface{})
+		organization := settingsMap["organization"].(string)
+		newSettings := map[string]interface{}{"organization": organization}
+		if location == "global" {
+			if v, ok := res["defaultStorageLocation"]; ok {
+				newSettings["default_storage_location"] = v.(string)
+			}
+		} else {
+			if v, ok := res["kmsKeyName"]; ok {
+				newSettings["kms_key_name"] = v.(string)
+			}
+		}
+		out["organization_settings"] = []interface{}{newSettings}
+	} else {
+		return nil, fmt.Errorf("exactly one of project_settings, folder_settings, or organization_settings must be specified")
+	}
+
+	// Add top-level output fields
+	if v, ok := res["name"]; ok {
+		out["name"] = v.(string)
+	}
+	if v, ok := res["serviceAccountId"]; ok {
+		out["service_account_id"] = v.(string)
+	}
+
+	return out, nil
+}

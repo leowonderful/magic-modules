@@ -44,62 +44,65 @@
     }
 
     // Build updateMask for PATCH (used for both Create and Update)
-    var masks []string
-    if d.HasChange(defaultStorageLocationPath) {
-        masks = append(masks, "defaultStorageLocation")
-    }
-    if d.HasChange(kmsKeyNamePath) {
-        masks = append(masks, "kmsKeyName")
-    }
-
-    if len(masks) > 0 {
-        url = fmt.Sprintf("%s?updateMask=%s", url, strings.Join(masks, ","))
-    } else {
-        // The API requires a non-empty updateMask for all PATCH requests.
-        // Default to masking all fields within the settings block.
-        // API expects flattened field names.
-        defaultMasks := []string{"default_storage_location", "kms_key_name"}
-        url = fmt.Sprintf("%s?updateMask=%s", url, strings.Join(defaultMasks, ","))
-        log.Printf("[DEBUG] No optional fields changed, using default mask: %s", strings.Join(defaultMasks, ","))
+    var settingsMap map[string]interface{}
+    if scopeType == "projects" {
+        if px, ok := d.GetOk("project_settings"); ok && len(px.([]interface{})) > 0 {
+            settingsMap = px.([]interface{})[0].(map[string]interface{})
+        }
+    } else if scopeType == "folders" {
+        if fx, ok := d.GetOk("folder_settings"); ok && len(fx.([]interface{})) > 0 {
+            settingsMap = fx.([]interface{})[0].(map[string]interface{})
+        }
+    } else { // organizations
+        if ox, ok := d.GetOk("organization_settings"); ok && len(ox.([]interface{})) > 0 {
+            settingsMap = ox.([]interface{})[0].(map[string]interface{})
+        }
     }
 
+    if settingsMap == nil {
+        return fmt.Errorf("could not find settings block in configuration")
+    }
 
     // Validate location-specific fields early
     if location == "global" {
-        if _, ok := d.GetOk(kmsKeyNamePath); ok {
+        if val, exists := settingsMap["kms_key_name"]; exists && val.(string) != "" {
             return fmt.Errorf("kms_key_name cannot be set for the 'global' location")
         }
     } else { // Regional
-        if _, ok := d.GetOk(defaultStorageLocationPath); ok {
+        if val, exists := settingsMap["default_storage_location"]; exists && val.(string) != "" {
             return fmt.Errorf("default_storage_location can only be set for the 'global' location")
         }
     }
 
     isCreate := d.Id() == ""
-    hasDefaultStorageChange := d.HasChange(defaultStorageLocationPath)
-    hasKmsKeyChange := d.HasChange(kmsKeyNamePath)
-
     var maskFields []string
-    ApplyMask := false
+    log.Printf("[DEBUG] Mask generation: isCreate=%t, location=%s", isCreate, location)
 
-    if !isCreate && (hasDefaultStorageChange || hasKmsKeyChange) { // pre_update with changes
-        ApplyMask = true
-        if location == "global" {
-            if hasDefaultStorageChange {
-                maskFields = append(maskFields, "defaultStorageLocation")
-            }
-        } else { // Regional
-            if hasKmsKeyChange {
-                maskFields = append(maskFields, "kmsKeyName")
-            }
+    if location == "global" {
+        _, exists := settingsMap["default_storage_location"]
+        hasChange := d.HasChange(defaultStorageLocationPath)
+        log.Printf("[DEBUG] default_storage_location: exists=%t, isCreate=%t, hasChange=%t", exists, isCreate, hasChange)
+        if exists && (isCreate || hasChange) {
+             maskFields = append(maskFields, "defaultStorageLocation")
+        }
+    } else { // Regional
+        _, exists := settingsMap["kms_key_name"]
+        hasChange := d.HasChange(kmsKeyNamePath)
+        log.Printf("[DEBUG] kms_key_name: exists=%t, isCreate=%t, hasChange=%t", exists, isCreate, hasChange)
+        if exists && (isCreate || hasChange) {
+             maskFields = append(maskFields, "kmsKeyName")
         }
     }
 
-    if ApplyMask && len(maskFields) > 0 {
+    if len(maskFields) > 0 {
         updateMask := strings.Join(maskFields, ",")
         newUrl, qErr := transport_tpg.AddQueryParams(url, map[string]string{"updateMask": updateMask})
         if qErr != nil {
             return qErr
         }
-        url = newUrl // Update the URL in the outer scope
+        url = newUrl
+        log.Printf("[DEBUG] Setting updateMask to: %s for isCreate=%t", updateMask, isCreate)
+    } else {
+        log.Printf("[DEBUG] No fields for updateMask, isCreate=%t", isCreate)
+        // The PATCH call will likely fail if a mask is strictly required by the API.
     }

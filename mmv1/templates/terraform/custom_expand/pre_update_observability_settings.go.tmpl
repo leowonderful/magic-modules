@@ -1,0 +1,59 @@
+// Copyright 2026 Google Inc.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package google
+
+import (
+	"net/url"
+	"strings"
+)
+
+newMask := []string{}
+location := d.Get("location").(string)
+
+settingsType := ""
+if _, ok := d.GetOk("project_settings.0"); ok {
+	settingsType = "project_settings.0"
+} else if _, ok := d.GetOk("folder_settings.0"); ok {
+	settingsType = "folder_settings.0"
+} else if _, ok := d.GetOk("organization_settings.0"); ok {
+	settingsType = "organization_settings.0"
+}
+
+if settingsType != "" {
+	ksf := settingsType + ".kms_key_name"
+	if d.HasChange(ksf) && location != "global" {
+		newMask = append(newMask, "kmsKeyName")
+	}
+
+	dslf := settingsType + ".default_storage_location"
+	if d.HasChange(dslf) && location == "global" {
+		newMask = append(newMask, "defaultStorageLocation")
+	}
+}
+
+u, err := url.Parse(url)
+if err != nil {
+	return fmt.Errorf("Error parsing URL: %s", err)
+}
+q := u.Query()
+if len(newMask) > 0 {
+	q.Set("updateMask", strings.Join(newMask, ","))
+} else {
+	// If no changes are detected that are valid for the location, remove the mask.
+	// This might prevent a PATCH call if the body is also empty, effectively a no-op.
+	q.Del("updateMask")
+}
+u.RawQuery = q.Encode()
+url = u.String()
+
