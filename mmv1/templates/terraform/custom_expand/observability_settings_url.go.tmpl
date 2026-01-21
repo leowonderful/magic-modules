@@ -43,6 +43,27 @@
         kmsKeyNamePath = "organization_settings.0.kms_key_name"
     }
 
+    // Build updateMask for PATCH (used for both Create and Update)
+    var masks []string
+    if d.HasChange(defaultStorageLocationPath) {
+        masks = append(masks, "defaultStorageLocation")
+    }
+    if d.HasChange(kmsKeyNamePath) {
+        masks = append(masks, "kmsKeyName")
+    }
+
+    if len(masks) > 0 {
+        url = fmt.Sprintf("%s?updateMask=%s", url, strings.Join(masks, ","))
+    } else {
+        // The API requires a non-empty updateMask for all PATCH requests.
+        // Default to masking all fields within the settings block.
+        // API expects flattened field names.
+        defaultMasks := []string{"default_storage_location", "kms_key_name"}
+        url = fmt.Sprintf("%s?updateMask=%s", url, strings.Join(defaultMasks, ","))
+        log.Printf("[DEBUG] No optional fields changed, using default mask: %s", strings.Join(defaultMasks, ","))
+    }
+
+
     // Validate location-specific fields early
     if location == "global" {
         if _, ok := d.GetOk(kmsKeyNamePath); ok {
@@ -82,5 +103,3 @@
         }
         url = newUrl // Update the URL in the outer scope
     }
-
-    
