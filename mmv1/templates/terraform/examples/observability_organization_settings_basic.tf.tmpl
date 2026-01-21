@@ -1,6 +1,6 @@
 resource "google_observability_settings" "primary" {
   provider = google-beta
-  location     = "us-central1"
+  location = "us"
 
   organization_settings {
     organization = "{{index $.Vars "org_id"}}"

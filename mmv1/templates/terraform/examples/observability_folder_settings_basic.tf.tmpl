@@ -6,7 +6,7 @@ resource "google_folder" "test_folder" {
 
 resource "google_observability_settings" "primary" {
   provider = google-beta
-  location = "us-central1"
+  location = "us"
 
   folder_settings {
     folder   = google_folder.test_folder.folder_id
