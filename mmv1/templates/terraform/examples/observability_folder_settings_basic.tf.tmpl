@@ -4,13 +4,9 @@ resource "google_folder" "test_folder" {
   parent       = "organizations/{{index $.TestEnvVars "org_id"}}"
 }
 
-resource "google_observability_settings" "primary" {
-  provider = google-beta
+resource "google_observability_folder_settings" "primary" {
   location = "us"
-
-  folder_settings {
-    folder   = google_folder.test_folder.folder_id
-    kms_key_name             = "{{index $.Vars "kms_key_name"}}"
-  }
+  resource = "folders/${google_folder.test_folder.folder_id}"
+  kms_key_name             = "{{index $.Vars "kms_key_name"}}"
   depends_on = [google_folder.test_folder]
 }

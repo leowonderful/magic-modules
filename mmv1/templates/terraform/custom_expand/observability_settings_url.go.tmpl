@@ -1,95 +1,27 @@
-    var scopeType, scopeId string
     location := d.Get("location").(string)
+    resource := d.Get("resource").(string)
 
-    if px, ok := d.GetOk("project_settings"); ok {
-        if len(px.([]interface{})) > 0 {
-            projMap := px.([]interface{})[0].(map[string]interface{})
-            scopeType = "projects"
-            scopeId = projMap["project"].(string)
-        }
-    } else if fx, ok := d.GetOk("folder_settings"); ok {
-        if len(fx.([]interface{})) > 0 {
-            folMap := fx.([]interface{})[0].(map[string]interface{})
-            scopeType = "folders"
-            scopeId = folMap["folder"].(string)
-        }
-    } else if ox, ok := d.GetOk("organization_settings"); ok {
-        if len(ox.([]interface{})) > 0 {
-            orgMap := ox.([]interface{})[0].(map[string]interface{})
-            scopeType = "organizations"
-            scopeId = orgMap["organization"].(string)
-        }
-    } else {
-        return fmt.Errorf("exactly one of project_settings, folder_settings, or organization_settings must be specified")
+    if resource == "" {
+        return fmt.Errorf("resource field cannot be empty")
     }
 
-    if scopeId == "" {
-        return fmt.Errorf("missing scope ID within the settings block")
-    }
+    // Construct the base URL dynamically based on the resource prefix
+    url = fmt.Sprintf("%s%s/locations/%s/settings", config.ObservabilityBasePath, resource, location)
 
-    url = fmt.Sprintf("%s%s/%s/locations/%s/settings", config.ObservabilityBasePath, scopeType, scopeId, location)
-
-    // Field paths for change detection and mask
-    defaultStorageLocationPath := ""
-    kmsKeyNamePath := ""
-    if scopeType == "projects" {
-        defaultStorageLocationPath = "project_settings.0.default_storage_location"
-        kmsKeyNamePath = "project_settings.0.kms_key_name"
-    } else if scopeType == "folders" {
-        defaultStorageLocationPath = "folder_settings.0.default_storage_location"
-        kmsKeyNamePath = "folder_settings.0.kms_key_name"
-    } else { // organizations
-        defaultStorageLocationPath = "organization_settings.0.default_storage_location"
-        kmsKeyNamePath = "organization_settings.0.kms_key_name"
-    }
+    // Construct the ID for the resource
+    d.SetId(url) // The full path is the ID
 
     // Build updateMask for PATCH (used for both Create and Update)
-    var settingsMap map[string]interface{}
-    if scopeType == "projects" {
-        if px, ok := d.GetOk("project_settings"); ok && len(px.([]interface{})) > 0 {
-            settingsMap = px.([]interface{})[0].(map[string]interface{})
-        }
-    } else if scopeType == "folders" {
-        if fx, ok := d.GetOk("folder_settings"); ok && len(fx.([]interface{})) > 0 {
-            settingsMap = fx.([]interface{})[0].(map[string]interface{})
-        }
-    } else { // organizations
-        if ox, ok := d.GetOk("organization_settings"); ok && len(ox.([]interface{})) > 0 {
-            settingsMap = ox.([]interface{})[0].(map[string]interface{})
-        }
-    }
-
-    if settingsMap == nil {
-        return fmt.Errorf("could not find settings block in configuration")
-    }
-
-    // Validate location-specific fields early
-    if location == "global" {
-        if val, exists := settingsMap["kms_key_name"]; exists && val.(string) != "" {
-            return fmt.Errorf("kms_key_name cannot be set for the 'global' location")
-        }
-    } else { // Regional
-        if val, exists := settingsMap["default_storage_location"]; exists && val.(string) != "" {
-            return fmt.Errorf("default_storage_location can only be set for the 'global' location")
-        }
-    }
-
-    isCreate := d.Id() == ""
+    isCreate := d.Id() == "" // This will be false now, but good practice
     var maskFields []string
     log.Printf("[DEBUG] Mask generation: isCreate=%t, location=%s", isCreate, location)
 
     if location == "global" {
-        _, exists := settingsMap["default_storage_location"]
-        hasChange := d.HasChange(defaultStorageLocationPath)
-        log.Printf("[DEBUG] default_storage_location: exists=%t, isCreate=%t, hasChange=%t", exists, isCreate, hasChange)
-        if exists && (isCreate || hasChange) {
+        if d.HasChange("default_storage_location") {
              maskFields = append(maskFields, "defaultStorageLocation")
         }
     } else { // Regional
-        _, exists := settingsMap["kms_key_name"]
-        hasChange := d.HasChange(kmsKeyNamePath)
-        log.Printf("[DEBUG] kms_key_name: exists=%t, isCreate=%t, hasChange=%t", exists, isCreate, hasChange)
-        if exists && (isCreate || hasChange) {
+        if d.HasChange("kms_key_name") {
              maskFields = append(maskFields, "kmsKeyName")
         }
     }
@@ -101,34 +33,7 @@
             return qErr
         }
         url = newUrl
-        log.Printf("[DEBUG] Setting updateMask to: %s for isCreate=%t", updateMask, isCreate)
+        log.Printf("[DEBUG] Setting updateMask to: %s", updateMask)
     } else {
-        log.Printf("[DEBUG] No fields for updateMask, isCreate=%t", isCreate)
-        // The PATCH call will likely fail if a mask is strictly required by the API.
+        log.Printf("[DEBUG] No fields for updateMask")
     }
-
-    // Set the top-level scope field for use in ID construction and state
-    if scopeType == "organizations" {
-        err = d.Set("organization", scopeId)
-        if err != nil {
-            return fmt.Errorf("error setting organization: %s", err)
-        }
-    } else if scopeType == "folders" {
-        err = d.Set("folder", scopeId)
-        if err != nil {
-            return fmt.Errorf("error setting folder: %s", err)
-        }
-    } else if scopeType == "projects" {
-        err = d.Set("project", scopeId)
-        if err != nil {
-            return fmt.Errorf("error setting project: %s", err)
-        }
-    }
-
-    var customId string
-    var idConstructErr error
-    customId, idConstructErr = tpgresource.ReplaceVars(d, config, "{{ $.IdFormat -}}")
-    if idConstructErr != nil {
-        return fmt.Errorf("Error constructing id: %s", idConstructErr)
-    }
-    d.SetId(customId)

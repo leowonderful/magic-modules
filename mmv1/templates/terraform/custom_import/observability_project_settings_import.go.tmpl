@@ -9,8 +9,12 @@
     scopeId := matches[2]
     location := matches[3]
 
-    if err := d.Set("resource", fmt.Sprintf("%s/%s", scopeType, scopeId)); err != nil {
-        return nil, fmt.Errorf("error setting resource: %s", err)
+    if scopeType != "projects" {
+        return nil, fmt.Errorf("invalid scope type %s for project settings import", scopeType)
+    }
+
+    if err := d.Set("project", scopeId); err != nil {
+        return nil, fmt.Errorf("error setting project: %s", err)
     }
     if err := d.Set("location", location); err != nil {
         return nil, fmt.Errorf("error setting location: %s", err)

@@ -1,0 +1,136 @@
+package observability_test
+
+import (
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+
+	"github.com/hashicorp/terraform-provider-google/google/acctest"
+	"github.com/hashicorp/terraform-provider-google/google/envvar"
+)
+
+func TestAccObservabilityProjectSettings_update_global(t *testing.T) {
+	t.Parallel()
+
+	context := map[string]interface{}{
+		"PROJECT_NAME":                     envvar.GetTestProjectFromEnv(),
+		"default_storage_location":         "us-central1",
+		"updated_default_storage_location": "us-east1",
+		"random_suffix":                    acctest.RandString(t, 10),
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccObservabilityProjectSettings_global_basic(context),
+			},
+			{
+				ResourceName:            "google_observability_project_settings.primary",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"location", "project"},
+			},
+			{
+				Config: testAccObservabilityProjectSettings_global_update(context),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_observability_project_settings.primary", plancheck.ResourceActionUpdate),
+					},
+				},
+			},
+			{
+				ResourceName:            "google_observability_project_settings.primary",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"location", "project"},
+			},
+		},
+	})
+}
+
+func testAccObservabilityProjectSettings_global_basic(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_observability_project_settings" "primary" {
+  location = "global"
+  project  = "%{PROJECT_NAME}"
+  default_storage_location = "%{default_storage_location}"
+}
+`, context)
+}
+
+func testAccObservabilityProjectSettings_global_update(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_observability_project_settings" "primary" {
+  location = "global"
+  project  = "%{PROJECT_NAME}"
+  default_storage_location = "%{updated_default_storage_location}"
+}
+`, context)
+}
+
+func TestAccObservabilityProjectSettings_update_regional(t *testing.T) {
+	t.Parallel()
+
+	kmsKey := acctest.BootstrapKMSKeyInLocation(t, "us")
+	updatedKMSKey := acctest.BootstrapKMSKeyInLocation(t, "us")
+
+	context := map[string]interface{}{
+		"PROJECT_NAME":         envvar.GetTestProjectFromEnv(),
+		"kms_key_name":         kmsKey.CryptoKey.Name,
+		"updated_kms_key_name": updatedKMSKey.CryptoKey.Name,
+		"random_suffix":        acctest.RandString(t, 10),
+	}
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccObservabilityProjectSettings_regional_basic(context),
+			},
+			{
+				ResourceName:            "google_observability_project_settings.primary",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"location", "project"},
+			},
+			{
+				Config: testAccObservabilityProjectSettings_regional_update(context),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("google_observability_project_settings.primary", plancheck.ResourceActionUpdate),
+					},
+				},
+			},
+			{
+				ResourceName:            "google_observability_project_settings.primary",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"location", "project"},
+			},
+		},
+	})
+}
+
+func testAccObservabilityProjectSettings_regional_basic(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_observability_project_settings" "primary" {
+  location = "us"
+  project  = "%{PROJECT_NAME}"
+  kms_key_name = "%{kms_key_name}"
+}
+`, context)
+}
+
+func testAccObservabilityProjectSettings_regional_update(context map[string]interface{}) string {
+	return acctest.Nprintf(`
+resource "google_observability_project_settings" "primary" {
+  location = "us"
+  project  = "%{PROJECT_NAME}"
+  kms_key_name = "%{updated_kms_key_name}"
+}
+`, context)
+}

@@ -1,0 +1,14 @@
+    var masks []string
+    if _, ok := obj["defaultStorageLocation"]; ok {
+        masks = append(masks, "defaultStorageLocation")
+    }
+    if _, ok := obj["kmsKeyName"]; ok {
+        masks = append(masks, "kmsKeyName")
+    }
+
+    if len(masks) > 0 {
+        url = fmt.Sprintf("%s?updateMask=%s", url, strings.Join(masks, ","))
+    } else {
+        // This case should ideally be prevented by schema validations (e.g., at least one optional)
+        return fmt.Errorf("cannot create/update with no fields set")
+    }

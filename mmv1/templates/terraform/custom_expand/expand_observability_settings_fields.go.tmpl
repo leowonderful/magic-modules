@@ -1,46 +1,15 @@
-	log.Printf("[DEBUG] ENCODER CALLED\n")
-	location := d.Get("location").(string)
-  log.Printf("[DEBUG] Location: %s\n", location)
 
-	// Clear any default-expanded top-level settings blocks from the obj map
-	delete(obj, "project_settings")
-	delete(obj, "folder_settings")
-	delete(obj, "organization_settings")
+    location := d.Get("location").(string)
 
-	var settingsMap map[string]interface{}
+    if location == "global" {
+        if v, ok := d.GetOk("default_storage_location"); ok {
+            obj["defaultStorageLocation"] = v.(string)
+        }
+    } else {
+        if v, ok := d.GetOk("kms_key_name"); ok {
+            obj["kmsKeyName"] = v.(string)
+        }
+    }
 
-	if px, ok := d.GetOk("project_settings"); ok && len(px.([]interface{})) > 0 {
-		settingsMap = px.([]interface{})[0].(map[string]interface{})
-	} else if fx, ok := d.GetOk("folder_settings"); ok && len(fx.([]interface{})) > 0 {
-		settingsMap = fx.([]interface{})[0].(map[string]interface{})
-	} else if ox, ok := d.GetOk("organization_settings"); ok && len(ox.([]interface{})) > 0 {
-		settingsMap = ox.([]interface{})[0].(map[string]interface{})
-    log.Printf("[DEBUG] org settingsMap: %+v\n", settingsMap)
-	} else {
-		return nil, fmt.Errorf("exactly one of project_settings, folder_settings, or organization_settings must be specified")
-	}
-
-	if settingsMap != nil {
-		// Default Storage Location - only if global
-		if location == "global" {
-			if val, vok := settingsMap["default_storage_location"]; vok {
-				obj["defaultStorageLocation"] = val.(string)
-				log.Printf("[DEBUG] Adding defaultStorageLocation to obj: %v\n", val.(string))
-			} else {
-				log.Printf("[DEBUG] default_storage_location not in settingsMap\n")
-			}
-		}
-
-		// KMS Key Name - only if not global
-		if location != "global" {
-			if val, vok := settingsMap["kms_key_name"]; vok {
-				obj["kmsKeyName"] = val.(string)
-				log.Printf("[DEBUG] Adding kmsKeyName to obj: %v\n", val.(string))
-			} else {
-				log.Printf("[DEBUG] kms_key_name not in settingsMap\n")
-			}
-		}
-	}
-
-  log.Printf("[DEBUG] ENCODER RETURNING: %+v\n", obj)
-	return obj, nil
+    log.Printf("[DEBUG] ENCODER RETURNING: %s", obj)
+    return obj, nil

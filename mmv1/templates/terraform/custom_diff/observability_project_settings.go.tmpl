@@ -1,0 +1,17 @@
+func observabilityProjectSettingsDiff(_ context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+	config := meta.(*transport_tpg.Config)
+	if diff.Id() == "" { // Only on Create
+		// If 'project' isn't in the config, pull from the provider
+		if _, ok := diff.GetOk("project"); !ok {
+			project := config.Project
+			if project == "" {
+				return fmt.Errorf("project must be set on the provider")
+			}
+			// Use diff.SetNew within CustomizeDiff
+			if err := diff.SetNew("project", project); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
