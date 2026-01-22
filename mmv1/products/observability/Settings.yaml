@@ -29,6 +29,8 @@ update_verb: 'PATCH'
 exclude_delete: true
 autogen_async: true
 
+id_format: 'organizations/{{organization}}/locations/{{location}}/settings'
+
 import_format:
   - 'organizations/{{organization}}/locations/{{location}}/settings'
 
@@ -47,7 +49,7 @@ custom_code:
   pre_read: templates/terraform/custom_expand/observability_settings_url.go.tmpl
   custom_import: templates/terraform/custom_import/observability_settings_import.go.tmpl
   encoder: templates/terraform/custom_expand/expand_observability_settings_fields.go.tmpl
-  decoder: templates/terraform/custom_flatten/flatten_observability_settings.go.tmpl
+  test_check_destroy: templates/terraform/custom_check_destroy/observability_settings.go.tmpl
 
 parameters:
   - name: 'location'
@@ -58,9 +60,22 @@ parameters:
     immutable: true
 
 properties:
+  - name: 'organization'
+    type: String
+    description: 'The organization ID, derived from the organization_settings block.'
+    output: true
+  - name: 'folder'
+    type: String
+    description: 'The folder ID, derived from the folder_settings block.'
+    output: true
+  - name: 'project'
+    type: String
+    description: 'The project ID, derived from the project_settings block.'
+    output: true
   - name: 'project_settings'
     type: NestedObject
     description: 'Settings specific to a project. Exactly one of project_settings, folder_settings, or organization_settings must be set.'
+    custom_flatten: templates/terraform/custom_flatten/flatten_observability_settings_block.go.tmpl
     exactly_one_of:
       - 'project_settings'
       - 'folder_settings'
@@ -84,6 +99,7 @@ properties:
   - name: 'folder_settings'
     type: NestedObject
     description: 'Settings specific to a folder. Exactly one of project_settings, folder_settings, or organization_settings must be set.'
+    custom_flatten: templates/terraform/custom_flatten/flatten_observability_settings_block.go.tmpl
     exactly_one_of:
       - 'project_settings'
       - 'folder_settings'
@@ -107,6 +123,7 @@ properties:
   - name: 'organization_settings'
     type: NestedObject
     description: 'Settings specific to an organization. Exactly one of project_settings, folder_settings, or organization_settings must be set.'
+    custom_flatten: templates/terraform/custom_flatten/flatten_observability_settings_block.go.tmpl
     exactly_one_of:
       - 'project_settings'
       - 'folder_settings'
@@ -139,7 +156,7 @@ properties:
 examples:
   - name: "observability_settings_project_basic"
     config_path: "templates/terraform/examples/observability_project_settings_basic.tf.tmpl"
-    primary_resource_id: "settings"
+    primary_resource_id: "primary"
     vars:
       location: "global"
       default_storage_location: "us-central1"
@@ -151,7 +168,7 @@ examples:
       kms_key_name: 'acctest.BootstrapKMSKey(t).CryptoKey.Name'
   - name: "observability_settings_project_update"
     config_path: "templates/terraform/examples/observability_project_settings_update.tf.tmpl"
-    primary_resource_id: "settings"
+    primary_resource_id: "primary"
     vars:
       location: "global"
       default_storage_location: "us-central1"
@@ -166,7 +183,7 @@ examples:
       updated_kms_key_name: '""'
   - name: "observability_settings_folder_basic"
     config_path: "templates/terraform/examples/observability_folder_settings_basic.tf.tmpl"
-    primary_resource_id: "settings"
+    primary_resource_id: "primary"
     vars:
       location: "global"
       default_storage_location: "us-central1"
@@ -180,7 +197,7 @@ examples:
 
   - name: "observability_settings_folder_update"
     config_path: "templates/terraform/examples/observability_folder_settings_update.tf.tmpl"
-    primary_resource_id: "settings"
+    primary_resource_id: "primary"
     vars:
       location: "global"
       default_storage_location: "us-central1"
@@ -196,7 +213,7 @@ examples:
       folder_id: 'FOLDER_ID'
   - name: "observability_settings_organization_basic"
     config_path: "templates/terraform/examples/observability_organization_settings_basic.tf.tmpl"
-    primary_resource_id: "settings"
+    primary_resource_id: "primary"
     vars:
       location: "global"
       default_storage_location: "us-central1"
@@ -208,7 +225,7 @@ examples:
       org_id: 'ORG_ID'
   - name: "observability_settings_organization_update"
     config_path: "templates/terraform/examples/observability_organization_settings_update.tf.tmpl"
-    primary_resource_id: "settings"
+    primary_resource_id: "primary"
     vars:
       location: "global"
       default_storage_location: "us-central1"

@@ -24,6 +24,9 @@
         settingsBlock = map[string]interface{}{
             "project": scopeId,
         }
+        if err := d.Set("project", scopeId); err != nil {
+            return nil, fmt.Errorf("error setting project: %s", err)
+        }
         if err := d.Set("project_settings", []interface{}{settingsBlock}); err != nil {
             return nil, fmt.Errorf("error setting project_settings: %s", err)
         }
@@ -31,12 +34,18 @@
         settingsBlock = map[string]interface{}{
             "folder": scopeId,
         }
+        if err := d.Set("folder", scopeId); err != nil {
+            return nil, fmt.Errorf("error setting folder: %s", err)
+        }
         if err := d.Set("folder_settings", []interface{}{settingsBlock}); err != nil {
             return nil, fmt.Errorf("error setting folder_settings: %s", err)
         }
     case "organizations":
         settingsBlock = map[string]interface{}{
             "organization": scopeId,
+        }
+        if err := d.Set("organization", scopeId); err != nil {
+            return nil, fmt.Errorf("error setting organization: %s", err)
         }
         if err := d.Set("organization_settings", []interface{}{settingsBlock}); err != nil {
             return nil, fmt.Errorf("error setting organization_settings: %s", err)

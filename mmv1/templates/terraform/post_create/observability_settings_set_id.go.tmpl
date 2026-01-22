@@ -1,0 +1,6 @@
+    config = meta.(*transport_tpg.Config)
+    id, err = tpgresource.ReplaceVars(d, config, "{{ $.IdFormat -}}")
+    if err != nil {
+        return fmt.Errorf("Error constructing id: %s", err)
+    }
+    d.SetId(id)

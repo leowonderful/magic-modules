@@ -106,3 +106,29 @@
         log.Printf("[DEBUG] No fields for updateMask, isCreate=%t", isCreate)
         // The PATCH call will likely fail if a mask is strictly required by the API.
     }
+
+    // Set the top-level scope field for use in ID construction and state
+    if scopeType == "organizations" {
+        err = d.Set("organization", scopeId)
+        if err != nil {
+            return fmt.Errorf("error setting organization: %s", err)
+        }
+    } else if scopeType == "folders" {
+        err = d.Set("folder", scopeId)
+        if err != nil {
+            return fmt.Errorf("error setting folder: %s", err)
+        }
+    } else if scopeType == "projects" {
+        err = d.Set("project", scopeId)
+        if err != nil {
+            return fmt.Errorf("error setting project: %s", err)
+        }
+    }
+
+    var customId string
+    var idConstructErr error
+    customId, idConstructErr = tpgresource.ReplaceVars(d, config, "{{ $.IdFormat -}}")
+    if idConstructErr != nil {
+        return fmt.Errorf("Error constructing id: %s", idConstructErr)
+    }
+    d.SetId(customId)

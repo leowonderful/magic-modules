@@ -1,0 +1,8 @@
+func flatten{{$.GetPrefix}}{{$.TitlelizeProperty}}(v interface{}, d *schema.ResourceData, config *transport_tpg.Config) interface{} {
+	// This flattener doesn't use the API response (v), as the settings block
+	// is not returned by the GET request. It reconstructs the block from the state in d.
+	if val, ok := d.GetOk("{{ underscore .Name }}"); ok && len(val.([]interface{})) > 0 {
+		return val.([]interface{})
+	}
+	return nil
+}
