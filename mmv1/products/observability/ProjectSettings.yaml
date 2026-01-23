@@ -19,11 +19,10 @@ min_version: 'ga'
 base_url: 'projects/{{project}}/locations/{{location}}/settings'
 self_link: 'projects/{{project}}/locations/{{location}}/settings'
 
-create_url: 'projects/{{project}}/locations/{{location}}/settings'
+create_url: 'projects/{{project}}/locations/{{location}}/settings?updateMask=defaultStorageLocation,kmsKeyName'
 create_verb: 'PATCH'
-update_url: 'projects/{{project}}/locations/{{location}}/settings'
+update_url: 'projects/{{project}}/locations/{{location}}/setting?updateMask=defaultStorageLocation,kmsKeyName''
 update_verb: 'PATCH'
-
 import_format:
   - "projects/{{project}}/locations/{{location}}/settings"
 

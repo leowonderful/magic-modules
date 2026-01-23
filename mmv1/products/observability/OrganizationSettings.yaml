@@ -14,18 +14,18 @@
 ---
 name: 'OrganizationSettings'
 description: Manages Cloud Observability settings for an organization.
-min_version: 'beta'
-
+min_version: 'ga'
 base_url: 'organizations/{{organization}}/locations/{{location}}/settings'
 self_link: 'organizations/{{organization}}/locations/{{location}}/settings'
 
-create_url: 'organizations/{{organization}}/locations/{{location}}/settings'
+create_url: 'organizations/{{organization}}/locations/{{location}}/settings?updateMask=defaultStorageLocation,kmsKeyName'
 create_verb: 'PATCH'
-update_url: 'organizations/{{organization}}/locations/{{location}}/settings'
+update_url: 'organizations/{{organization}}/locations/{{location}}/settings?updateMask=defaultStorageLocation,kmsKeyName'
 update_verb: 'PATCH'
-
 exclude_delete: true
 autogen_async: true
+import_format:
+  - 'organizations/{{organization}}/locations/{{location}}/settings'
 
 async:
   operation:
@@ -35,11 +35,6 @@ async:
     base_url: '{{op_id}}'
   result:
     resource_inside_response: true
-
-custom_code:
-  custom_import: templates/terraform/custom_import/observability_settings_import.go.tmpl
-  encoder: templates/terraform/custom_expand/expand_observability_settings_fields.go.tmpl
-  test_check_destroy: templates/terraform/custom_check_destroy/observability_settings.go.tmpl
 
 parameters:
   - name: 'location'
@@ -81,19 +76,5 @@ examples:
       kms_key_name: "example-key"
     test_vars_overrides:
       kms_key_name: 'acctest.BootstrapKMSKeyInLocation(t, "us").CryptoKey.Name'
-    test_env_vars:
-      org_id: 'ORG_ID'
-  - name: "observability_organization_settings_update"
-    config_path: "templates/terraform/examples/observability_organization_settings_update.tf.tmpl"
-    primary_resource_id: "primary"
-    vars:
-      location: "global"
-      default_storage_location: "us-central1"
-      updated_default_storage_location: "europe-west1"
-      kms_key_name: "example-key"
-      updated_kms_key_name: "example-updated-key"
-    test_vars_overrides:
-      kms_key_name: 'acctest.BootstrapKMSKey(t).CryptoKey.Name'
-      updated_kms_key_name: '""'
     test_env_vars:
       org_id: 'ORG_ID'
