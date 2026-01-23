@@ -9,19 +9,19 @@ import (
 	transport_tpg "github.com/hashicorp/terraform-provider-google/google/transport"
 )
 
-func DataSourceObservabilityProjectSettings() *schema.Resource {
+func DataSourceObservabilityFolderSettings() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceObservabilityProjectSettingsRead,
+		Read: dataSourceObservabilityFolderSettingsRead,
 		Schema: map[string]*schema.Schema{
-			"project": {
+			"folder": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: `The project for which to retrieve settings.`,
+				Description: `The folder for which to retrieve settings.`,
 			},
 			"location": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: `The location of the settings.`,
+				Description: `The location for which to retrieve settings.`,
 			},
 			"default_storage_location": {
 				Type:        schema.TypeString,
@@ -41,26 +41,27 @@ func DataSourceObservabilityProjectSettings() *schema.Resource {
 			"service_account_id": {
 				Type:        schema.TypeString,
 				Computed:    true,
-				Description: `The service account used by Cloud Observability for this project.`,
+				Description: `The service account used by Cloud Observability for this folder.`,
 			},
 		},
 	}
 }
 
-func dataSourceObservabilityProjectSettingsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceObservabilityFolderSettingsRead(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*transport_tpg.Config)
 	userAgent, err := tpgresource.GenerateUserAgentString(d, config.UserAgent)
 	if err != nil {
 		return err
 	}
 
-	project := d.Get("project").(string)
+	folder := d.Get("folder").(string)
 	location := d.Get("location").(string)
 
 	// Wait for API enablement to propagate
-	time.Sleep(30 * time.Second)
+	// Wait for API enablement and IAM propagation
+	time.Sleep(90 * time.Second)
 
-	url := fmt.Sprintf("%sprojects/%s/locations/%s/settings", config.ObservabilityBasePath, project, location)
+	url := fmt.Sprintf("%sfolders/%s/locations/%s/settings", config.ObservabilityBasePath, folder, location)
 
 	res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
 		Config:    config,
@@ -68,36 +69,33 @@ func dataSourceObservabilityProjectSettingsRead(d *schema.ResourceData, meta int
 		RawURL:    url,
 		UserAgent: userAgent,
 		// TODO: Put this back when we drop visibility labels on Obs settings API.
-		//Project:   project,
+		//Project:   config.Project,
 	})
 	if err != nil {
-		return transport_tpg.HandleDataSourceNotFoundError(err, d, fmt.Sprintf("ObservabilityProjectSettings %q", url), url)
+		return transport_tpg.HandleDataSourceNotFoundError(err, d, fmt.Sprintf("ObservabilityFolderSettings %q", url), url)
 	}
 
 	d.SetId(res["name"].(string))
 
-	if err := d.Set("project", project); err != nil {
-		return fmt.Errorf("Error reading ProjectSettings: %s", err)
-	}
-	if err := d.Set("location", location); err != nil {
-		return fmt.Errorf("Error reading ProjectSettings: %s", err)
+	if err := d.Set("folder", folder); err != nil {
+		return fmt.Errorf("Error reading FolderSettings: %s", err)
 	}
 	if err := d.Set("name", res["name"]); err != nil {
-		return fmt.Errorf("Error reading ProjectSettings: %s", err)
+		return fmt.Errorf("Error reading FolderSettings: %s", err)
 	}
 	if v, ok := res["defaultStorageLocation"]; ok {
 		if err := d.Set("default_storage_location", v); err != nil {
-			return fmt.Errorf("Error reading ProjectSettings: %s", err)
+			return fmt.Errorf("Error reading FolderSettings: %s", err)
 		}
 	}
 	if v, ok := res["kmsKeyName"]; ok {
 		if err := d.Set("kms_key_name", v); err != nil {
-			return fmt.Errorf("Error reading ProjectSettings: %s", err)
+			return fmt.Errorf("Error reading FolderSettings: %s", err)
 		}
 	}
 	if v, ok := res["serviceAccountId"]; ok {
 		if err := d.Set("service_account_id", v); err != nil {
-			return fmt.Errorf("Error reading ProjectSettings: %s", err)
+			return fmt.Errorf("Error reading FolderSettings: %s", err)
 		}
 	}
 
