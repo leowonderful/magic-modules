@@ -21,7 +21,7 @@ self_link: 'projects/{{project}}/locations/{{location}}/settings'
 
 create_url: 'projects/{{project}}/locations/{{location}}/settings?updateMask=defaultStorageLocation,kmsKeyName'
 create_verb: 'PATCH'
-update_url: 'projects/{{project}}/locations/{{location}}/setting?updateMask=defaultStorageLocation,kmsKeyName''
+update_url: 'projects/{{project}}/locations/{{location}}/settings?updateMask=defaultStorageLocation,kmsKeyName'
 update_verb: 'PATCH'
 import_format:
   - "projects/{{project}}/locations/{{location}}/settings"
@@ -38,16 +38,6 @@ async:
   result:
     resource_inside_response: true
 
-exclude_default_cdiff: true
-custom_code:
-  encoder: templates/terraform/custom_expand/expand_observability_settings_fields.go.tmpl
-  test_check_destroy: templates/terraform/custom_check_destroy/observability_settings.go.tmpl
-  constants: templates/terraform/custom_diff/observability_project_settings.go.tmpl
-  pre_create: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
-  pre_update: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
-custom_diff:
-  - observabilityProjectSettingsDiff
-
 parameters:
   - name: 'location'
     type: String
@@ -55,12 +45,11 @@ parameters:
     url_param_only: true
     required: true
     immutable: true
-  # Project is (usually) provider-level, but best to be explicit for clarity.
   - name: 'project'
     type: String
     description: 'The project ID or number.'
     url_param_only: true
-    required: false # Handled by provider default
+    required: true
     immutable: true
 
 properties:
