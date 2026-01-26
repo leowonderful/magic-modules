@@ -19,15 +19,19 @@ min_version: 'ga'
 base_url: 'projects/{{project}}/locations/{{location}}/settings'
 self_link: 'projects/{{project}}/locations/{{location}}/settings'
 
-create_url: 'projects/{{project}}/locations/{{location}}/settings?updateMask=defaultStorageLocation,kmsKeyName'
+create_url: 'projects/{{project}}/locations/{{location}}/settings'
 create_verb: 'PATCH'
-update_url: 'projects/{{project}}/locations/{{location}}/settings?updateMask=defaultStorageLocation,kmsKeyName'
+update_url: 'projects/{{project}}/locations/{{location}}/settings'
 update_verb: 'PATCH'
 import_format:
   - "projects/{{project}}/locations/{{location}}/settings"
 
 exclude_delete: true
 autogen_async: true
+
+custom_code:
+  pre_create: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
+  pre_update: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
 
 async:
   operation:
