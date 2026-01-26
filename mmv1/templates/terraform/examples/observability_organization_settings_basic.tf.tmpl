@@ -1,5 +1,4 @@
 data "google_observability_organization_settings" "settings_data" {
-  provider     = google-beta
   organization = "{{index $.TestEnvVars "org_id"}}"
   location     = "us"
 }
@@ -11,7 +10,6 @@ resource "google_kms_crypto_key_iam_member" "iam" {
 }
 
 resource "google_observability_organization_settings" "primary" {
-  provider                 = google-beta
   location                 = "us"
   organization             = "{{index $.TestEnvVars "org_id"}}"
   kms_key_name             = "{{index $.Vars "key_name"}}"

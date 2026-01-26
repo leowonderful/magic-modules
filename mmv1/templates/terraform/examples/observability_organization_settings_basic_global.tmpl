@@ -1,5 +1,0 @@
-resource "google_observability_organization_settings" "primary" {
-  location     = "us"
-  resource = "organizations/{{index $.TestEnvVars "org_id"}}"
-  kms_key_name = "{{index $.Vars "updated_kms_key_name"}}"
-}

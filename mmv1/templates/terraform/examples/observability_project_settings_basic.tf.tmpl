@@ -1,5 +1,4 @@
 resource "google_observability_project_settings" "primary" {
-  provider = google-beta
   location = "us"
   project  = "{{index $.TestEnvVars "PROJECT_NAME"}}"
   kms_key_name             = "{{index $.Vars "kms_key_name"}}"
