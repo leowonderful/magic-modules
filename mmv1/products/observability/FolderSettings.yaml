@@ -42,7 +42,10 @@ async:
 # So we must inject custom code to dynamically build the mask.
 custom_code:
   pre_create: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
+  pre_create: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
+  custom_create: templates/terraform/custom_create/observability_folder_settings_create.go.tmpl
   pre_update: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
+  custom_update: templates/terraform/custom_update/observability_folder_settings_update.go.tmpl
 
 parameters:
   - name: 'location'

@@ -31,8 +31,10 @@ autogen_async: true
 exclude_default_cdiff: true
 
 custom_code:
+  custom_create: templates/terraform/custom_create/observability_project_settings_create.go.tmpl
   pre_create: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
   pre_update: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
+  custom_update: templates/terraform/custom_update/observability_project_settings_update.go.tmpl
 
 async:
   operation:
