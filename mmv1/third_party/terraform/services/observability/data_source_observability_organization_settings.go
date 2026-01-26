@@ -72,8 +72,6 @@ func dataSourceObservabilityOrganizationSettingsRead(d *schema.ResourceData, met
 			Method:    "GET",
 			RawURL:    url,
 			UserAgent: userAgent,
-			// TODO: Put this back when we drop visibility labels on Obs settings API.
-			//Project:   config.Project,
 		})
 		if lastErr == nil {
 			break

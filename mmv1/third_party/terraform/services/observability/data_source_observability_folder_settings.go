@@ -83,7 +83,6 @@ func dataSourceObservabilityFolderSettingsRead(d *schema.ResourceData, meta inte
 			if waitTime > 60*time.Second {
 				waitTime = 60 * time.Second
 			}
-			// log.Printf("[DEBUG] Attempt %d failed, retrying in %s: %v", i+1, waitTime, lastErr)
 			time.Sleep(waitTime)
 			continue
 		} else {
