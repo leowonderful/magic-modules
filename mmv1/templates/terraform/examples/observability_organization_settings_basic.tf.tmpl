@@ -4,7 +4,7 @@ data "google_observability_organization_settings" "settings_data" {
 }
 
 resource "google_kms_crypto_key_iam_member" "iam" {
-  crypto_key_id = "{{index $.Vars "key_name"}}"
+  crypto_key_id = "{{index $.Vars "kms_key_name"}}"
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:${data.google_observability_organization_settings.settings_data.service_account_id}"
 }
@@ -12,6 +12,6 @@ resource "google_kms_crypto_key_iam_member" "iam" {
 resource "google_observability_organization_settings" "primary" {
   location                 = "us"
   organization             = "{{index $.TestEnvVars "org_id"}}"
-  kms_key_name             = "{{index $.Vars "key_name"}}"
+  kms_key_name             = "{{index $.Vars "kms_key_name"}}"
   depends_on = [google_kms_crypto_key_iam_member.iam]
 }

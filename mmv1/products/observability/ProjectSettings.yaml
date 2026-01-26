@@ -28,6 +28,7 @@ import_format:
 
 exclude_delete: true
 autogen_async: true
+exclude_default_cdiff: true
 
 custom_code:
   pre_create: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
@@ -43,15 +44,15 @@ async:
     resource_inside_response: true
 
 parameters:
-  - name: 'location'
-    type: String
-    description: 'The location of the settings.'
-    url_param_only: true
-    required: true
-    immutable: true
   - name: 'project'
     type: String
     description: 'The project ID or number.'
+    url_param_only: true
+    required: true
+    immutable: true
+  - name: 'location'
+    type: String
+    description: 'The location of the settings.'
     url_param_only: true
     required: true
     immutable: true
@@ -80,7 +81,7 @@ examples:
       location: "us"
       kms_key_name: "example-key"  # Placeholder, will be overridden
     test_env_vars:
-      PROJECT_NAME: 'PROJECT_NAME'
+      project_name: 'PROJECT_NAME'
       org_id: 'ORG_ID'
     test_vars_overrides:
       kms_key_name: 'acctest.BootstrapKMSKeyInLocation(t, "us").CryptoKey.Name'
@@ -91,3 +92,4 @@ examples:
       location: "global"
     test_env_vars:
       org_id: 'ORG_ID'
+      project_name: 'PROJECT_NAME'

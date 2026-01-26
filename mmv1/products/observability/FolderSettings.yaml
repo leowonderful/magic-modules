@@ -80,12 +80,12 @@ examples:
     primary_resource_id: "primary"
     vars:
       location: "us"
-      key_name: "example-key" # Placeholder, will be overridden
+      kms_key_name: "example-key" # Placeholder, will be overridden
       folder_name: "tf-test-folder"
     test_env_vars:
       org_id: 'ORG_ID'
     test_vars_overrides:
-      key_name: 'acctest.BootstrapKMSKeyInLocation(t, "us").CryptoKey.Name'
+      kms_key_name: 'acctest.BootstrapKMSKeyInLocation(t, "us").CryptoKey.Name'
   - name: "observability_folder_settings_basic_global"
     config_path: "templates/terraform/examples/observability_folder_settings_basic_global.tf.tmpl"
     primary_resource_id: "primary_global"
