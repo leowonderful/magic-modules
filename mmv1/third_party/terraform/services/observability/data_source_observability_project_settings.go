@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-provider-google/google/tpgresource"
 	transport_tpg "github.com/hashicorp/terraform-provider-google/google/transport"
+	"google.golang.org/api/googleapi"
 )
 
 func DataSourceObservabilityProjectSettings() *schema.Resource {
@@ -57,21 +58,41 @@ func dataSourceObservabilityProjectSettingsRead(d *schema.ResourceData, meta int
 	project := d.Get("project").(string)
 	location := d.Get("location").(string)
 
-	// Wait for API enablement to propagate
-	time.Sleep(30 * time.Second)
-
 	url := fmt.Sprintf("%sprojects/%s/locations/%s/settings", config.ObservabilityBasePath, project, location)
 
-	res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
-		Config:    config,
-		Method:    "GET",
-		RawURL:    url,
-		UserAgent: userAgent,
-		// TODO: Put this back when we drop visibility labels on Obs settings API.
-		//Project:   project,
-	})
-	if err != nil {
-		return transport_tpg.HandleDataSourceNotFoundError(err, d, fmt.Sprintf("ObservabilityProjectSettings %q", url), url)
+	var res map[string]interface{}
+	var lastErr error
+
+	const maxRetries = 6
+	const baseDelay = 5 * time.Second
+
+	for i := 0; i < maxRetries; i++ {
+		res, lastErr = transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
+			Config:    config,
+			Method:    "GET",
+			RawURL:    url,
+			UserAgent: userAgent,
+		})
+		if lastErr == nil {
+			break
+		}
+
+		if gerr, ok := lastErr.(*googleapi.Error); ok && (gerr.Code == 403 || gerr.Code == 404) {
+			// Retryable error
+			waitTime := baseDelay * time.Duration(1<<i) // Exponential backoff
+			if waitTime > 60*time.Second {
+				waitTime = 60 * time.Second
+			}
+			time.Sleep(waitTime)
+			continue
+		} else {
+			// Non-retryable error
+			break
+		}
+	}
+
+	if lastErr != nil {
+		return transport_tpg.HandleDataSourceNotFoundError(lastErr, d, fmt.Sprintf("ObservabilityProjectSettings %q", url), url)
 	}
 
 	d.SetId(res["name"].(string))
