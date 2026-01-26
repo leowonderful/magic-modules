@@ -78,9 +78,16 @@ examples:
     primary_resource_id: "primary"
     vars:
       location: "us"
-      kms_key_name: "example-key"
+      kms_key_name: "example-key"  # Placeholder, will be overridden
     test_env_vars:
       PROJECT_NAME: 'PROJECT_NAME'
       org_id: 'ORG_ID'
     test_vars_overrides:
       kms_key_name: 'acctest.BootstrapKMSKeyInLocation(t, "us").CryptoKey.Name'
+  - name: "observability_project_settings_basic_global"
+    config_path: "templates/terraform/examples/observability_project_settings_basic_global.tf.tmpl"
+    primary_resource_id: "primary_global"
+    vars:
+      location: "global"
+    test_env_vars:
+      org_id: 'ORG_ID'

@@ -75,10 +75,16 @@ examples:
     config_path: "templates/terraform/examples/observability_organization_settings_basic.tf.tmpl"
     primary_resource_id: "primary"
     vars:
-      location: "global"
-      default_storage_location: "us-central1"
-      kms_key_name: "example-key"
+      location: "us"
+      kms_key_name: "example-key"  # Placeholder, will be overridden
     test_vars_overrides:
       kms_key_name: 'acctest.BootstrapKMSKeyInLocation(t, "us").CryptoKey.Name'
+    test_env_vars:
+      org_id: 'ORG_ID'
+  - name: "observability_organization_settings_basic_global"
+    config_path: "templates/terraform/examples/observability_organization_settings_basic_global.tf.tmpl"
+    primary_resource_id: "primary_global"
+    vars:
+      location: "global"
     test_env_vars:
       org_id: 'ORG_ID'

@@ -1,0 +1,5 @@
+resource "google_observability_project_settings" "primary_global" {
+  location                 = "global"
+  project                  = "{{index $.TestEnvVars "PROJECT_NAME"}}"
+  default_storage_location = "us"
+}
