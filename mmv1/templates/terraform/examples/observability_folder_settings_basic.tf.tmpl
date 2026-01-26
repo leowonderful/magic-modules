@@ -1,11 +1,23 @@
 resource "google_folder" "test_folder" {
-  display_name = "tf-test-obs-%{random_suffix}"
+  display_name = "tf-test-%{random_suffix}"
   parent       = "organizations/{{index $.TestEnvVars "org_id"}}"
+  deletion_protection = false
+}
+
+data "google_observability_folder_settings" "settings_data" {
+  folder   = google_folder.test_folder.folder_id
+  location = "us"
+}
+
+resource "google_kms_crypto_key_iam_member" "iam" {
+  crypto_key_id = "{{index $.Vars "key_name"}}"
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:${data.google_observability_folder_settings.settings_data.service_account_id}"
 }
 
 resource "google_observability_folder_settings" "primary" {
   location = "us"
   folder   = google_folder.test_folder.folder_id
-  # kms_key_name             = "{{index $.Vars "kms_key_name"}}"
-  depends_on = [google_folder.test_folder]
+  kms_key_name = "{{index $.Vars "key_name"}}"
+  depends_on = [google_kms_crypto_key_iam_member.iam]
 }

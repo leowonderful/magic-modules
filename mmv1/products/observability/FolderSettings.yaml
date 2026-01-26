@@ -19,9 +19,9 @@ min_version: 'ga'
 base_url: 'folders/{{folder}}/locations/{{location}}/settings'
 self_link: 'folders/{{folder}}/locations/{{location}}/settings'
 
-create_url: 'folders/{{folder}}/locations/{{location}}/settings?updateMask=defaultStorageLocation,kmsKeyName'
+create_url: 'folders/{{folder}}/locations/{{location}}/settings'
 create_verb: 'PATCH'
-update_url: 'folders/{{folder}}/locations/{{location}}/settings?updateMask=defaultStorageLocation,kmsKeyName'
+update_url: 'folders/{{folder}}/locations/{{location}}/settings'
 update_verb: 'PATCH'
 exclude_delete: true
 autogen_async: true
@@ -35,6 +35,14 @@ async:
     base_url: '{{op_id}}'
   result:
     resource_inside_response: true
+
+# We can't just hardcode the mask into the URL, because the API will reject requests
+# if the mask contains fields that are not allowed for the location (e.g. kmsKeyName for global),
+# even if those fields are not actually being updated.
+# So we must inject custom code to dynamically build the mask.
+custom_code:
+  pre_create: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
+  pre_update: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
 
 parameters:
   - name: 'location'
@@ -72,9 +80,9 @@ examples:
     primary_resource_id: "primary"
     vars:
       location: "us"
-      kms_key_name: "example-key"
+      key_name: "example-key" # Placeholder, will be overridden
+      folder_name: "tf-test-folder"
     test_env_vars:
-      folder_id: 'FOLDER_ID'
       org_id: 'ORG_ID'
     test_vars_overrides:
-      kms_key_name: 'acctest.BootstrapKMSKeyInLocation(t, "us").CryptoKey.Name'
+      key_name: 'acctest.BootstrapKMSKeyInLocation(t, "us").CryptoKey.Name'
