@@ -46,12 +46,15 @@ async:
     resource_inside_response: true
 
 parameters:
-  - name: 'project'
-    type: String
-    description: 'The project ID or number.'
-    url_param_only: true
-    required: true
-    immutable: true
+  # The default behavior of the provider injects an `optional` and `computed` project parameter
+  # for the resource (see resource.go.tmpl).
+  # If the user does not supply `project`, it will be inferred by the provider.
+  # - name: 'project'
+  #   type: String
+  #   description: 'The project ID or number.'
+  #   url_param_only: true
+  #   required: true
+  #   immutable: true
   - name: 'location'
     type: String
     description: 'The location of the settings.'
