@@ -331,15 +331,6 @@ func (td *TemplateData) GenerateFile(filePath, templatePath string, input any, g
 		funcMap[k] = v
 	}
 
-	funcMap["contains_name"] = func(list []*api.Type, name string) bool {
-		for _, item := range list {
-			if item.Name == name {
-				return true
-			}
-		}
-		return false
-	}
-
 	tmpl, err := template.New(templateFileName).Funcs(funcMap).ParseFS(td.templateFS, templates...)
 	if err != nil {
 		glog.Exit(fmt.Sprintf("error parsing %s for filepath %s ", templateFileName, filePath), err)
