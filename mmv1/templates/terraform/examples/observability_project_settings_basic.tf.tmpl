@@ -11,16 +11,22 @@ resource "google_project_service" "observability_api" {
   disable_on_destroy = false
 }
 
-# Add a delay to allow the service account to propagate
-resource "time_sleep" "wait_for_sa_propagation" {
+# Wait for the project to be created and recognized by the Observability API
+resource "time_sleep" "wait_for_settings_propagation" {
   create_duration = "90s"
-  depends_on = [google_project_service.observability_api]
+  depends_on      = [google_project_service.observability_api]
 }
 
 data "google_observability_project_settings" "settings" {
-  location = "us"
-  project  = google_project.project.project_id
-  depends_on = [time_sleep.wait_for_sa_propagation]
+  location   = "us"
+  project    = google_project.project.project_id
+  depends_on = [time_sleep.wait_for_settings_propagation]
+}
+
+# Add a delay to allow the service account to propagate for IAM bindings
+resource "time_sleep" "wait_for_sa_propagation" {
+  create_duration = "90s"
+  depends_on      = [data.google_observability_project_settings.settings]
 }
 
 resource "google_kms_crypto_key_iam_member" "crypto_key" {
@@ -28,7 +34,7 @@ resource "google_kms_crypto_key_iam_member" "crypto_key" {
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:${data.google_observability_project_settings.settings.service_account_id}"
   depends_on = [
-    data.google_observability_project_settings.settings
+    time_sleep.wait_for_sa_propagation
   ]
 }
 

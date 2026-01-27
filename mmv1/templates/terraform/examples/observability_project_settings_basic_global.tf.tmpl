@@ -11,16 +11,15 @@ resource "google_project_service" "observability_api" {
   disable_on_destroy = false
 }
 
-# Data source read to wait for project/API propagation
-data "google_observability_project_settings" "wait_for_propagation" {
-  location   = "global"
-  project    = google_project.project.project_id
-  depends_on = [google_project_service.observability_api]
+# Wait for the project to be created and recognized by the Observability API
+resource "time_sleep" "wait_for_settings_propagation" {
+  create_duration = "90s"
+  depends_on      = [google_project_service.observability_api]
 }
 
 resource "google_observability_project_settings" "primary_global" {
   location                 = "global"
   project                  = google_project.project.project_id
   default_storage_location = "eu"
-  depends_on = [data.google_observability_project_settings.wait_for_propagation]
+  depends_on               = [time_sleep.wait_for_settings_propagation]
 }
