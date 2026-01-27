@@ -18,15 +18,24 @@ min_version: 'ga'
 
 base_url: 'folders/{{folder}}/locations/{{location}}/settings'
 self_link: 'folders/{{folder}}/locations/{{location}}/settings'
-
 create_url: 'folders/{{folder}}/locations/{{location}}/settings'
 create_verb: 'PATCH'
 update_url: 'folders/{{folder}}/locations/{{location}}/settings'
 update_verb: 'PATCH'
 exclude_delete: true
 autogen_async: true
+
+# We can't hardcode the mask into the URL, because the API will reject requests
+# if the mask contains fields that are not allowed for the location.
+# So we must inject custom code to dynamically build the mask.
+custom_code:
+  pre_create: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
+  custom_create: templates/terraform/custom_create/observability_folder_settings_create.go.tmpl
+  pre_update: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
+  custom_update: templates/terraform/custom_update/observability_folder_settings_update.go.tmpl
 import_format:
   - 'folders/{{folder}}/locations/{{location}}/settings'
+
 async:
   operation:
     timeouts:
@@ -35,16 +44,6 @@ async:
     base_url: '{{op_id}}'
   result:
     resource_inside_response: true
-
-# We can't just hardcode the mask into the URL, because the API will reject requests
-# if the mask contains fields that are not allowed for the location (e.g. kmsKeyName for global),
-# even if those fields are not actually being updated.
-# So we must inject custom code to dynamically build the mask.
-custom_code:
-  pre_create: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
-  custom_create: templates/terraform/custom_create/observability_folder_settings_create.go.tmpl
-  pre_update: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
-  custom_update: templates/terraform/custom_update/observability_folder_settings_update.go.tmpl
 
 parameters:
   - name: 'location'
