@@ -27,7 +27,6 @@ autogen_async: true
 
 custom_code:
   pre_create: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
-  pre_create: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
   custom_create: templates/terraform/custom_create/observability_organization_settings_create.go.tmpl
   pre_update: templates/terraform/custom_expand/observability_settings_mask.go.tmpl
   custom_update: templates/terraform/custom_update/observability_organization_settings_update.go.tmpl
