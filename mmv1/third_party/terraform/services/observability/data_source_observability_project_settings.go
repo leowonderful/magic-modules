@@ -60,39 +60,14 @@ func dataSourceObservabilityProjectSettingsRead(d *schema.ResourceData, meta int
 
 	url := fmt.Sprintf("%sprojects/%s/locations/%s/settings", config.ObservabilityBasePath, project, location)
 
-	var res map[string]interface{}
-	var lastErr error
-
-	const maxRetries = 6
-	const baseDelay = 5 * time.Second
-
-	for i := 0; i < maxRetries; i++ {
-		res, lastErr = transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
-			Config:    config,
-			Method:    "GET",
-			RawURL:    url,
-			UserAgent: userAgent,
-		})
-		if lastErr == nil {
-			break
-		}
-
-		if gerr, ok := lastErr.(*googleapi.Error); ok && (gerr.Code == 403 || gerr.Code == 404) {
-			// Retryable error
-			waitTime := baseDelay * time.Duration(1<<i) // Exponential backoff
-			if waitTime > 60*time.Second {
-				waitTime = 60 * time.Second
-			}
-			time.Sleep(waitTime)
-			continue
-		} else {
-			// Non-retryable error
-			break
-		}
-	}
-
-	if lastErr != nil {
-		return transport_tpg.HandleDataSourceNotFoundError(lastErr, d, fmt.Sprintf("ObservabilityProjectSettings %q", url), url)
+	res, err := transport_tpg.SendRequest(transport_tpg.SendRequestOptions{
+		Config:    config,
+		Method:    "GET",
+		RawURL:    url,
+		UserAgent: userAgent,
+	})
+	if err != nil {
+		return transport_tpg.HandleDataSourceNotFoundError(err, d, fmt.Sprintf("ObservabilityProjectSettings %q", url), url)
 	}
 
 	d.SetId(res["name"].(string))
