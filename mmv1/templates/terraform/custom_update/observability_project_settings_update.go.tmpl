@@ -37,7 +37,7 @@
 	}
 
 	if len(masks) == 0 {
-    // This should not be reached if CustomizeDiff is working correctly
+
 		return fmt.Errorf("Cannot update ProjectSettings: no fields changed")
 	}
   url = fmt.Sprintf("%s?updateMask=%s", url, strings.Join(masks, ","))
