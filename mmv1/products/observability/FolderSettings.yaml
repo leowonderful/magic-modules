@@ -80,6 +80,7 @@ examples:
   - name: "observability_folder_settings_basic"
     config_path: "templates/terraform/examples/observability_folder_settings_basic.tf.tmpl"
     primary_resource_id: "primary"
+    external_providers: ["time"]
     vars:
       location: "us"
       kms_key_name: "example-key" # Placeholder, will be overridden

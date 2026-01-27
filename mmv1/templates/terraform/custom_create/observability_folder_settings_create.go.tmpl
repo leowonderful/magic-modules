@@ -9,7 +9,7 @@
 
 	obj := make(map[string]interface{})
   // In Create, we don't check HasChange, we just take what's in the config.
-  if _, ok := d.GetRawConfig().GetAttr("default_storage_location"); !ok.IsNull() {
+  if val := d.GetRawConfig().GetAttr("default_storage_location"); !val.IsNull() {
     v := d.Get("default_storage_location")
     log.Printf("[DEBUG] default_storage_location In Config: v=%#v", v)
     defaultStorageLocationProp, err := expandObservabilityFolderSettingsDefaultStorageLocation(v, d, config)
