@@ -89,6 +89,7 @@ examples:
   - name: "observability_folder_settings_basic_global"
     config_path: "templates/terraform/examples/observability_folder_settings_basic_global.tf.tmpl"
     primary_resource_id: "primary_global"
+    external_providers: ["time"]
     vars:
       location: "global"
     test_env_vars:
